@@ -4,7 +4,7 @@ namespace MessageService {
     using System.Security.Policy;
 
     /// <summary>
-    /// Remoting interface 
+    /// Remoting <c>interface</c> 
     /// </summary>
     public interface IMessageServiceBasic {
         void Request(ISenderInformation info, IMessage message);
@@ -14,7 +14,7 @@ namespace MessageService {
     }
 
     /// <summary>
-    /// Service wrapper, makes calls to IMessageServiceBasic
+    /// Service wrapper, makes calls to <c>IMessageServiceBasic</c>
     /// </summary>
     public interface IMessageService {
         void Request(ISenderInformation info, IMessage message, Uri url);
@@ -29,6 +29,4 @@ namespace MessageService {
     public interface IMessage { }
 
     public interface ISenderInformation { }
-
-    public interface State : IMessageServiceBasic { }
 }
