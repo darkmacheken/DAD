@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28010.2048
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{D667A288-97A8-447C-8558-ECAE7FF8B3EE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TupleSpace", "TupleSpace\TupleSpace.csproj", "{F8247279-B6E4-4721-944A-563D08B5EAA7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{D667A288-97A8-447C-8558-ECAE7FF8B3EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D667A288-97A8-447C-8558-ECAE7FF8B3EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D667A288-97A8-447C-8558-ECAE7FF8B3EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8247279-B6E4-4721-944A-563D08B5EAA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8247279-B6E4-4721-944A-563D08B5EAA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8247279-B6E4-4721-944A-563D08B5EAA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8247279-B6E4-4721-944A-563D08B5EAA7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

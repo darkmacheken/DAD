@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Core">
+      <HintPath>..\..\..\..\..\Library\Frameworks\Mono.framework\Versions\5.12.0\lib\mono\4.6.1-api\System.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
