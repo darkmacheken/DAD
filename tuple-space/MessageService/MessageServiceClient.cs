@@ -102,14 +102,7 @@ namespace MessageService {
                         IResponses responses = new Responses();
                         int countMessages = 0;
                         while (countMessages != numberResponsesToWait) {
-                            int index = timeout < 0
-                                            ? Task.WaitAny(tasks.ToArray(), -1)
-                                            : Task.WaitAny(tasks.ToArray(), timeout);
-
-                            if (index == -1) {
-                                // timeout
-                                return null;
-                            }
+                            int index = Task.WaitAny(tasks.ToArray());
 
                             responses.Add(tasks[index].Result);
 
@@ -119,6 +112,11 @@ namespace MessageService {
                             // dispose task in the lists
                             tasks.RemoveAt(index);
                             cancellations.RemoveAt(index);
+                        }
+
+                        // cancel all other tasks
+                        foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
+                            cancellationTokenSource.Cancel();
                         }
 
                         return responses;
@@ -134,7 +132,7 @@ namespace MessageService {
 
             // Cancel task, we don't care anymore.
             cancellationTs.Cancel();
-            Log.Error("Request: Timeout, abort thread request.");
+            Log.Error("Multicast Request: Timeout, abort thread request.");
             return null;
         }
 
