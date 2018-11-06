@@ -1,2 +1,8 @@
 tuple-space/.vs/
 tuple-space/Client/obj/
+
+*.exe
+
+tuple-space/Client/bin/Debug/Client\.exe\.config
+
+tuple-space/Client/bin/Debug/
