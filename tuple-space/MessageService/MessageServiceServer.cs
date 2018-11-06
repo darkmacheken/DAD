@@ -10,14 +10,14 @@ namespace MessageService {
     public class MessageServiceServer : MarshalByRefObject, IMessageServiceServer {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly Protocol protocol;
+        private readonly IProtocol protocol;
         private readonly int minDelay;
         private readonly int maxDelay;
 
         private readonly Random seedRandom;
 
 
-        public MessageServiceServer(Protocol protocol, int minDelay, int maxDelay) {
+        public MessageServiceServer(IProtocol protocol, int minDelay, int maxDelay) {
             this.protocol = protocol;
             this.minDelay = minDelay;
             this.maxDelay = maxDelay;
@@ -38,6 +38,14 @@ namespace MessageService {
 
             Thread.Sleep(delay);
             return this.protocol.ProcessRequest(info, message);
+        }
+
+        public void Freeze() {
+            throw new NotImplementedException();
+        }
+
+        public void Unfreeze() {
+            throw new NotImplementedException();
         }
     }
 }

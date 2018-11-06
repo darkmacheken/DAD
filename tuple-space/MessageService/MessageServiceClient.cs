@@ -57,7 +57,7 @@ namespace MessageService {
 
             // Cancel task, we don't care anymore.
             cancellationTokenSource.Cancel();
-            Log.Error($"Request: Timeout, abort thread request.");
+            Log.Error("Request: Timeout, abort thread request.");
             return null;
         }
 
@@ -94,11 +94,11 @@ namespace MessageService {
             }
 
             // Wait until numberResponsesToWait
-            CancellationTokenSource cancellationTS = new CancellationTokenSource();
+            CancellationTokenSource cancellationTs = new CancellationTokenSource();
             Task<IResponses> getRequests = Task<IResponses>.Factory.StartNew(
                 () => {
                     using (
-                        cancellationTS.Token.Register(() => Log.Debug("Task cancellation requested"))) {
+                        cancellationTs.Token.Register(() => Log.Debug("Task cancellation requested"))) {
                         IResponses responses = new Responses();
                         int countMessages = 0;
                         while (countMessages != numberResponsesToWait) {
@@ -124,7 +124,7 @@ namespace MessageService {
                         return responses;
                     }
                 },
-                cancellationTS.Token);
+                cancellationTs.Token);
 
             bool taskCompleted = timeout < 0 ? getRequests.Wait(-1) : getRequests.Wait(timeout);
 
@@ -133,8 +133,8 @@ namespace MessageService {
             }
 
             // Cancel task, we don't care anymore.
-            cancellationTS.Cancel();
-            Log.Error($"Request: Timeout, abort thread request.");
+            cancellationTs.Cancel();
+            Log.Error("Request: Timeout, abort thread request.");
             return null;
         }
 
@@ -144,6 +144,14 @@ namespace MessageService {
             return (MessageServiceServer) Activator.GetObject(
                 typeof(MessageServiceServer),
                 serviceUrl);
+        }
+
+        public void Freeze() {
+            throw new NotImplementedException();
+        }
+
+        public void Unfreeze() {
+            throw new NotImplementedException();
         }
     }
 }

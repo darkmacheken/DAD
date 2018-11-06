@@ -33,17 +33,11 @@ namespace MessageService {
         IResponses RequestMulticast(ISenderInformation info, IMessage message, Uri[] urls, int numberResponsesToWait, int timeout);
     }
 
-    public interface IMessage {
-        string ToString();
-    }
+    public interface IMessage { }
 
-    public interface ISenderInformation {
-        string ToString();
-    }
+    public interface ISenderInformation { }
 
-    public interface IResponse {
-        string ToString();
-    }
+    public interface IResponse { }
 
     public interface IResponses {
         void Add(IResponse response);
@@ -53,8 +47,7 @@ namespace MessageService {
         int Count();
     }
 
-
-    public interface Protocol {
+    public interface IProtocol {
         IResponse ProcessRequest(ISenderInformation info, IMessage message);
     }
 }
