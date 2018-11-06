@@ -1,32 +1,60 @@
 ﻿using System;
 
 namespace MessageService {
-    using System.Security.Policy;
-
     /// <summary>
     /// Remoting <c>interface</c> 
     /// </summary>
-    public interface IMessageServiceBasic {
-        void Request(ISenderInformation info, IMessage message);
-
-        void Send(ISenderInformation info, IMessage message);
-
+    public interface IMessageServiceServer {
+        /// <summary>
+        /// Processes the request.
+        /// </summary>
+        IResponse Request(ISenderInformation info, IMessage message);
     }
 
     /// <summary>
-    /// Service wrapper, makes calls to <c>IMessageServiceBasic</c>
+    /// Service wrapper, makes calls to <c>IMessageServiceServer</c>
     /// </summary>
-    public interface IMessageService {
-        void Request(ISenderInformation info, IMessage message, Uri url);
+    public interface IMessageServiceClient {
+        /// <summary>
+        /// Makes a simple request call
+        /// </summary>
+        IResponse Request(ISenderInformation info, IMessage message, Uri url);
 
-        void Send(ISenderInformation info, IMessage message, Uri url);
+        /// <summary>
+        /// Makes a request call, returns <see langword="null"/> when timeouts..
+        /// </summary>
+        IResponse Request(ISenderInformation info, IMessage message, Uri url, int timeout);
 
-        void RequestMulticast(ISenderInformation info, IMessage message, Uri[] urls);
-
-        void SendMulticast(ISenderInformation info, IMessage message, Uri[] urls);
+        /// <summary>
+        /// Multicasts a request. Waits for <paramref name="numberResponsesToWait"/> and returns.
+        /// If <paramref name="numberResponsesToWait"/> is less than zero, it waits for all.
+        /// If <paramref name="timeout"/> is less than zero it waits indefinitely.
+        /// </summary>
+        IResponses RequestMulticast(ISenderInformation info, IMessage message, Uri[] urls, int numberResponsesToWait, int timeout);
     }
 
-    public interface IMessage { }
+    public interface IMessage {
+        string ToString();
+    }
 
-    public interface ISenderInformation { }
+    public interface ISenderInformation {
+        string ToString();
+    }
+
+    public interface IResponse {
+        string ToString();
+    }
+
+    public interface IResponses {
+        void Add(IResponse response);
+
+        IResponse[] ToArray();
+
+        int Count();
+    }
+
+
+    public interface Protocol {
+        IResponse ProcessRequest(ISenderInformation info, IMessage message);
+    }
 }
