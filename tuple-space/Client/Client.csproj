@@ -55,6 +55,8 @@
     <Compile Include="Client.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="ScriptStructure\BasicNode.cs" />
+    <Compile Include="Visitor\Writer.cs" />
+    <Compile Include="Visitor\IBasicVisitor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -64,6 +66,9 @@
     <None Include="obj\Debug\Client.csproj.CoreCompileInputs.cache" />
     <None Include="obj\Debug\Client.csproj.FileListAbsolute.txt" />
     <None Include="obj\Debug\Client.csprojAssemblyReference.cache" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Visitor\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

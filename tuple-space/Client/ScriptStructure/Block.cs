@@ -4,13 +4,22 @@ namespace Client.ScriptStructure
 {
     public abstract class Block : BasicNode
     {
-        private List<BasicNode> nodes;
+        protected List<BasicNode> nodes;
+
         private Parser parser;
 
         public Block() : base()
         {
             this.nodes = new List<BasicNode>();
             this.parser = new Parser();
+        }
+
+        public List<BasicNode> Nodes
+        {
+            get
+            {
+                return nodes;
+            }
         }
 
         public void AddNode(BasicNode node) 

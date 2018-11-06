@@ -4,13 +4,19 @@ namespace Client.ScriptStructure
 {
     public abstract class Command : BasicNode
     {
-        private string tuple = null;
-
-        public Command() : base() {}
+        private string tuple;
 
         public Command(string tuple) 
         {
             this.tuple = tuple;
+        }
+
+        public string Tuple
+        {
+            get
+            {
+                return tuple;
+            }
         }
     }
 }
