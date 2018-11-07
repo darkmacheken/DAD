@@ -47,10 +47,11 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="Interfaces.cs" />
-    <Compile Include="MessageService.cs" />
+    <Compile Include="MessageServiceWrapper.cs" />
     <Compile Include="MessageServiceClient.cs" />
     <Compile Include="MessageServiceServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestMessageService.cs" />
     <Compile Include="Wrappers.cs" />
   </ItemGroup>
   <ItemGroup>

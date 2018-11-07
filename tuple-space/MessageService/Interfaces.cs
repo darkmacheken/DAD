@@ -49,5 +49,7 @@ namespace MessageService {
 
     public interface IProtocol {
         IResponse ProcessRequest(ISenderInformation info, IMessage message);
+
+        void Init(MessageServiceClient messageServiceClient, Uri url, string serverId);
     }
 }

@@ -11,7 +11,7 @@ using log4net;
 namespace MessageService {
     
     public class MessageServiceClient : IMessageServiceClient {
-        private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(IMessageServiceClient));
 
         private readonly TcpChannel channel;
 
@@ -101,10 +101,11 @@ namespace MessageService {
                         cancellationTs.Token.Register(() => Log.Debug("Task cancellation requested"))) {
                         IResponses responses = new Responses();
                         int countMessages = 0;
-                        while (countMessages != numberResponsesToWait) {
+                        while (countMessages < numberResponsesToWait) {
                             int index = Task.WaitAny(tasks.ToArray());
 
                             responses.Add(tasks[index].Result);
+                            countMessages++;
 
                             // cancel task
                             cancellations[index].Cancel();

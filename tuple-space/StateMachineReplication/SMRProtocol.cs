@@ -32,17 +32,24 @@ namespace StateMachineReplication {
     public class SMRProtocol : IProtocol {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public ReplicaState ReplicaState { get; }
+        private ReplicaState replicaState;
 
-        private readonly MessageServiceClient messageServiceClient;
+        private MessageServiceClient messageServiceClient;
 
-        public SMRProtocol(MessageServiceClient messageServiceClient, Uri url, string serverId) {
+        private string serverId;
+
+
+        public void Init(MessageServiceClient messageServiceClient, Uri url, string serverId) {
+            this.serverId = serverId;
             this.messageServiceClient = messageServiceClient;
-            ReplicaState = new ReplicaState(this, url, serverId);
+            this.replicaState = new ReplicaState(this, url, serverId);
         }
 
         public IResponse ProcessRequest(ISenderInformation info, IMessage message) {
-            throw new System.NotImplementedException();
+            TestSenderInformation senderInformation = (TestSenderInformation)info;
+            TestMessage testMessage = (TestMessage)message;
+
+            return new TestResponse($"Hello {testMessage.Name} from {this.serverId}");
         }
     }
 }

@@ -8,7 +8,7 @@ using log4net;
 
 namespace MessageService {
     public class MessageServiceServer : MarshalByRefObject, IMessageServiceServer {
-        private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(IMessageServiceServer));
 
         private readonly IProtocol protocol;
         private readonly int minDelay;
