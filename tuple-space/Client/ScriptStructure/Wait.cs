@@ -1,25 +1,20 @@
 using Client.Visitor;
 
-namespace Client.ScriptStructure
-{
-    public class Wait : BasicNode
-    {
+namespace Client.ScriptStructure {
+    public class Wait : BasicNode {
         private int time;
 
-        public Wait(int time) : base() {
+        public Wait(int time) : base()  {
             this.time = time;
         }
 
-        public int Time
-        {
-            get
-            {
+        public int Time {
+            get {
                 return time;
             }
         }
 
-        public override void Accept(IBasicVisitor v)
-        {
+        public override void Accept(IBasicVisitor v) {
             v.VisitWait(this);
         }
     }

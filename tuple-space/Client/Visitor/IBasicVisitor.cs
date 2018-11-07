@@ -1,10 +1,8 @@
 ﻿using System;
 using Client.ScriptStructure;
 
-namespace Client.Visitor
-{
-    public interface IBasicVisitor
-    {
+namespace Client.Visitor {
+    public interface IBasicVisitor {
         void VisitAdd(Add add);
         void VisitRead(Read read);
         void VisitRepeatBlock(RepeatBlock repeatBlock);

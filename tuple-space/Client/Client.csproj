@@ -57,6 +57,8 @@
     <Compile Include="ScriptStructure\BasicNode.cs" />
     <Compile Include="Visitor\Writer.cs" />
     <Compile Include="Visitor\IBasicVisitor.cs" />
+    <Compile Include="Exceptions\IncorrectCommandException.cs" />
+    <Compile Include="Exceptions\BlockEndMissingException.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -69,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Visitor\" />
+    <Folder Include="Exceptions\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
