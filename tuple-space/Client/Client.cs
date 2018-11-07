@@ -22,7 +22,7 @@ namespace Client {
             this.script = new Script();
             script.Parse(parser, lines, 0);
             Writer writer = new Writer();
-            script.Accept(writer);
+            script.Accept(writer); //todo this is for testing, will delete further on
         }
 
         static void Main(string[] args) {
