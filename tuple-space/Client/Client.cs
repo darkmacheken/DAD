@@ -31,8 +31,9 @@ namespace Client {
             } catch (Exception ex) {
                 if (ex is IncorrectCommandException || ex is BlockEndMissingException) {
                     Console.WriteLine(ex.Message);
+                } else { 
+                    throw;
                 }
-                throw;
             }
         }
     }
