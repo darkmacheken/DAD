@@ -4,7 +4,7 @@ namespace Client.ScriptStructure {
     public class RepeatBlock : Block {
         private readonly int numRepeats;
 
-        public RepeatBlock(int numRepeats) : base()  {
+        public RepeatBlock(int numRepeats) {
             this.numRepeats = numRepeats;
         }
 

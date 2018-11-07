@@ -20,7 +20,7 @@ namespace Client {
 
         private void SetScript(string scriptFile) {
             string[] lines = System.IO.File.ReadAllLines(@scriptFile); //relative to the executable's folder
-            this.script.Parse(parser, lines, 0);
+            this.script.Parse(this.parser, lines, 0);
             Writer writer = new Writer();
             this.script.Accept(writer); //todo this is for testing, will delete further on
         }
@@ -31,9 +31,8 @@ namespace Client {
             } catch (Exception ex) {
                 if (ex is IncorrectCommandException || ex is BlockEndMissingException) {
                     Console.WriteLine(ex.Message);
-                } else {
-                    throw;
                 }
+                throw;
             }
         }
     }
