@@ -4,22 +4,44 @@ using MessageService.Visitor;
 
 namespace MessageService.Messages {
     [Serializable]
-    public abstract  class ClientRequest : IMessage {
+    public class ClientInfo : ISenderInformation {
+        public string ClientId { get; set; }
+
+        public ClientInfo(string clientId) {
+            ClientId = clientId;
+        }
+
+        public override string ToString() {
+            return $"{{ client id : {this.ClientId} }}";
+        }
+    }
+
+
+    [Serializable]
+    public abstract class ClientRequest : IMessage {
         public string Tuple { get; set; }
 
         protected ClientRequest(string tuple) {
             this.Tuple = tuple;
         }
 
-        public abstract void Accept(ProcessRequestVisitor visitor, ISenderInformation info);
+        public abstract IResponse Accept(IProcessRequestVisitor visitor, ISenderInformation info);
+
+        public override string ToString() {
+            return $"{this.Tuple}";
+        }
     }
 
     [Serializable]
     public class ReadRequest : ClientRequest {
         public ReadRequest(string tuple) : base(tuple) { }
 
-        public override void Accept(ProcessRequestVisitor visitor, ISenderInformation info) {
-            visitor.AcceptReadRequest(this, info);
+        public override IResponse Accept(IProcessRequestVisitor visitor, ISenderInformation info) {
+            return visitor.AcceptReadRequest(this, info);
+        }
+
+        public override string ToString() {
+            return $"{{ read {base.ToString()} }}";
         }
     }
 
@@ -27,8 +49,12 @@ namespace MessageService.Messages {
     public class AddRequest : ClientRequest {
         public AddRequest(string tuple) : base(tuple) { }
 
-        public override void Accept(ProcessRequestVisitor visitor, ISenderInformation info) {
-            visitor.AcceptAddRequest(this, info);
+        public override IResponse Accept(IProcessRequestVisitor visitor, ISenderInformation info) {
+            return visitor.AcceptAddRequest(this, info);
+        }
+
+        public override string ToString() {
+            return $"{{ add {base.ToString()} }}";
         }
     }
 
@@ -36,8 +62,12 @@ namespace MessageService.Messages {
     public class TakeRequest : ClientRequest {
         public TakeRequest(string tuple) : base(tuple) { }
 
-        public override void Accept(ProcessRequestVisitor visitor, ISenderInformation info) {
-            visitor.AcceptTakeRequest(this, info);
+        public override IResponse Accept(IProcessRequestVisitor visitor, ISenderInformation info) {
+            return visitor.AcceptTakeRequest(this, info);
+        }
+
+        public override string ToString() {
+            return $"{{ take {base.ToString()} }}";
         }
     }
 }

@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 
 using MessageService;
+using MessageService.Visitor;
+
+using StateMachineReplication.StateProcess;
 
 namespace StateMachineReplication {
     public class ReplicaState {
@@ -10,21 +13,22 @@ namespace StateMachineReplication {
         private readonly SortedDictionary<string, Uri> configuration;
         private readonly List<Tuple<ISenderInformation, IMessage>> logger;
         private readonly Dictionary<string, IResponse> clientTable;
-        private string leader;
-        private string state;
-        private int viewNumber;
-        private int opNumber;
-        private int commitNumber;
 
-        public ReplicaState(SMRProtocol protocol, Uri url, string serverId) {
+        public string Leader { get; set; }
+        public IProcessRequestVisitor State { get; set; }
+        public int ViewNumber { get; set; }
+        public int OpNumber { get; set; }
+        public int CommitNumber { get; set;  }
+
+        public ReplicaState(Uri url, string serverId) {
             this.ServerId = serverId;
             this.configuration = new SortedDictionary<string, Uri> { { this.ServerId, url } };
             this.logger = new List<Tuple<ISenderInformation, IMessage>>();
             this.clientTable = new Dictionary<string, IResponse>();
-            this.state = "normal";
-            this.viewNumber = 0;
-            this.opNumber = 0;
-            this.commitNumber = 0;
+            this.State = new NormalStateProcessRequest(this);
+            this.ViewNumber = 0;
+            this.OpNumber = 0;
+            this.CommitNumber = 0;
         }
     }
 }

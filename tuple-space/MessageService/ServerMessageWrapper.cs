@@ -5,8 +5,8 @@ using System.Runtime.Remoting.Channels.Tcp;
 using log4net;
 
 namespace MessageService {
-    public class MessageServiceWrapper {
-        private static readonly ILog Log = LogManager.GetLogger(typeof(MessageServiceWrapper));
+    public class ServerMessageWrapper {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(ServerMessageWrapper));
 
         private readonly TcpChannel channel;
 
@@ -14,7 +14,7 @@ namespace MessageService {
 
         public MessageServiceClient ServiceClient { get; }
 
-        public MessageServiceWrapper(Uri myUrl, IProtocol protocol, int minDelay, int maxDelay) {
+        public ServerMessageWrapper(Uri myUrl, IProtocol protocol, int minDelay, int maxDelay) {
             // create tcp channel
             this.channel = new TcpChannel(myUrl.Port);
             ChannelServices.RegisterChannel(this.channel, false);

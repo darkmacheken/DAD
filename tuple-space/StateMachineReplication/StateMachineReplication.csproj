@@ -48,6 +48,7 @@
     <Compile Include="ReplicaState.cs" />
     <Compile Include="SMRProtocol.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StateProcess\NormalStateProcessRequest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MessageService\MessageService.csproj">

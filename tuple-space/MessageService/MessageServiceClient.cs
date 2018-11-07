@@ -11,7 +11,7 @@ using log4net;
 namespace MessageService {
     
     public class MessageServiceClient : IMessageServiceClient {
-        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(IMessageServiceClient));
+        private static readonly ILog Log = LogManager.GetLogger(typeof(IMessageServiceClient));
 
         private readonly TcpChannel channel;
 

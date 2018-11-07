@@ -13,14 +13,14 @@ namespace Server
             Uri url = new Uri(args[1]);
 
             // create message service wrapper
-            MessageServiceWrapper messageService = new MessageServiceWrapper(
+            ServerMessageWrapper serverMessage = new ServerMessageWrapper(
                 url,
                 protocol,
                 int.Parse(args[2]), 
                 int.Parse(args[3]));
 
             // init protocol
-            protocol.Init(messageService.ServiceClient, url, serverId);
+            protocol.Init(serverMessage.ServiceClient, url, serverId);
             Console.ReadLine();
         }
     }

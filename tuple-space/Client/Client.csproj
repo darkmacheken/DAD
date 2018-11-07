@@ -59,6 +59,7 @@
     <Compile Include="Client.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="ScriptStructure\BasicNode.cs" />
+    <Compile Include="Visitor\Executor.cs" />
     <Compile Include="Visitor\Writer.cs" />
     <Compile Include="Visitor\IBasicVisitor.cs" />
     <Compile Include="Exceptions\IncorrectCommandException.cs" />
@@ -67,16 +68,8 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="Client.csproj" />
-    <None Include="Client.sln" />
-    <None Include=".vs\Client\xs\UserPrefs.xml" />
-    <None Include="obj\Debug\Client.csproj.CoreCompileInputs.cache" />
-    <None Include="obj\Debug\Client.csproj.FileListAbsolute.txt" />
-    <None Include="obj\Debug\Client.csprojAssemblyReference.cache" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Visitor\" />
-    <Folder Include="Exceptions\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\MessageService\MessageService.csproj">
       <Project>{13222cd1-28c6-4869-a653-a11cf61bc95a}</Project>

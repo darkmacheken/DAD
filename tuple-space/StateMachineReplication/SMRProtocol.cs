@@ -5,26 +5,24 @@ using log4net;
 
 using MessageService;
 
+using StateMachineReplication.StateProcess;
+
 namespace StateMachineReplication {
    
     public class SMRProtocol : IProtocol {
-        private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(SMRProtocol));
 
-        private ReplicaState replicaState;
+        public ReplicaState ReplicaState { get; private set; }
 
         private MessageServiceClient messageServiceClient;
-
-        private string serverId;
-
-
+        
         public void Init(MessageServiceClient messageServiceClient, Uri url, string serverId) {
-            this.serverId = serverId;
             this.messageServiceClient = messageServiceClient;
-            this.replicaState = new ReplicaState(this, url, serverId);
+            this.ReplicaState = new ReplicaState(url, serverId);
         }
 
         public IResponse ProcessRequest(ISenderInformation info, IMessage message) {
-            throw new NotImplementedException();
+            return message.Accept(ReplicaState.State, info);
         }
     }
 }
