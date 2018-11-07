@@ -1,5 +1,7 @@
 ﻿using System;
 
+using MessageService.Visitor;
+
 namespace MessageService {
     /// <summary>
     /// Remoting <c>interface</c> 
@@ -33,7 +35,9 @@ namespace MessageService {
         IResponses RequestMulticast(ISenderInformation info, IMessage message, Uri[] urls, int numberResponsesToWait, int timeout);
     }
 
-    public interface IMessage { }
+    public interface IMessage {
+        void Accept(ProcessRequestVisitor visitor, ISenderInformation info);
+    }
 
     public interface ISenderInformation { }
 

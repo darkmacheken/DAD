@@ -50,8 +50,9 @@
     <Compile Include="MessageServiceWrapper.cs" />
     <Compile Include="MessageServiceClient.cs" />
     <Compile Include="MessageServiceServer.cs" />
+    <Compile Include="Serializables\ClientRequest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestMessageService.cs" />
+    <Compile Include="Visitor\ProcessRequestVisitor.cs" />
     <Compile Include="Wrappers.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
