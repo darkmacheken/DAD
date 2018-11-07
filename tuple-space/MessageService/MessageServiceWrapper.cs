@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 
@@ -7,7 +6,7 @@ using log4net;
 
 namespace MessageService {
     public class MessageServiceWrapper {
-        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(MessageServiceWrapper));
+        private static readonly ILog Log = LogManager.GetLogger(typeof(MessageServiceWrapper));
 
         private readonly TcpChannel channel;
 

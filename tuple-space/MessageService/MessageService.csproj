@@ -54,8 +54,5 @@
     <Compile Include="TestMessageService.cs" />
     <Compile Include="Wrappers.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

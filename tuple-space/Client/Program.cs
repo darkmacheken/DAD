@@ -13,13 +13,18 @@ namespace Client {
 
             MessageServiceClient messageServiceClient = new MessageServiceClient(url);
 
-            IResponses responses = messageServiceClient.RequestMulticast(new TestSenderInformation(clientId), new TestMessage("Pedro"), urls, 2, -1);
+            IResponses responses = messageServiceClient.RequestMulticast(new TestSenderInformation(clientId), new TestMessage("Pedro"), urls, 2, 5);
 
-            foreach (IResponse Iresponse in responses.ToArray()) {
-                TestResponse response = (TestResponse)Iresponse;
+            if (responses == null) {
+                Console.WriteLine("Timeout");
+            } else {
+                foreach (IResponse Iresponse in responses.ToArray()) {
+                    TestResponse response = (TestResponse)Iresponse;
 
-                Console.WriteLine(response.Response);
+                    Console.WriteLine(response.Response);
+                }
             }
+            
             
             Console.ReadLine();
         }
