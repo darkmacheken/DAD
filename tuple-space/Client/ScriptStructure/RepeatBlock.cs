@@ -1,19 +1,14 @@
-using System;
 using Client.Visitor;
 
 namespace Client.ScriptStructure {
     public class RepeatBlock : Block {
-        private int numRepeats;
+        private readonly int numRepeats;
 
         public RepeatBlock(int numRepeats) : base()  {
             this.numRepeats = numRepeats;
         }
 
-        public int NumRepeats {
-            get {
-                return numRepeats;
-            }
-        }
+        public int NumRepeats => this.numRepeats;
 
         public override void Accept(IBasicVisitor v) {
             v.VisitRepeatBlock(this);

@@ -15,16 +15,16 @@ namespace Client.Visitor {
 
         public void VisitRepeatBlock(RepeatBlock repeatBlock) {
             Console.WriteLine($"begin-repeat {repeatBlock.NumRepeats}");
-            for (int i = 0; i < repeatBlock.Nodes.Count; i++) {
-                repeatBlock.Nodes[i].Accept(this);
+            foreach (BasicNode node in repeatBlock.Nodes) {
+                node.Accept(this);
             }
             Console.WriteLine("end-repeat");
         }
 
         public void VisitScript(Script script) {
             Console.WriteLine("Script:\n");
-            for (int i=0; i < script.Nodes.Count; i++) {
-                script.Nodes[i].Accept(this);
+            foreach (BasicNode node in script.Nodes) {
+                node.Accept(this);
             }
         }
 
