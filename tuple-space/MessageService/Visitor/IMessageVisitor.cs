@@ -1,7 +1,7 @@
 ﻿using MessageService.Serializable;
 
 namespace MessageService.Visitor {
-    public interface IProcessRequestVisitor {
+    public interface IMessageVisitor {
         IResponse VisitAddRequest(AddRequest addRequest);
 
         IResponse VisitTakeRequest(TakeRequest takeRequest);

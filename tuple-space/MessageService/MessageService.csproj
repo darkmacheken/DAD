@@ -51,9 +51,9 @@
     <Compile Include="ServerMessageWrapper.cs" />
     <Compile Include="MessageServiceClient.cs" />
     <Compile Include="MessageServiceServer.cs" />
-    <Compile Include="Serializable\ClientRequestResponse.cs" />
+    <Compile Include="Serializable\ClientRequestMessages.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Visitor\IProcessRequestVisitor.cs" />
+    <Compile Include="Visitor\IMessageVisitor.cs" />
     <Compile Include="Wrappers.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

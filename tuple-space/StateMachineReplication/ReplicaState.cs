@@ -6,7 +6,7 @@ using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
 
-using StateMachineReplication.StateProcess;
+using StateMachineReplication.StateProcessor;
 
 namespace StateMachineReplication {
     public class ReplicaState {
@@ -19,7 +19,7 @@ namespace StateMachineReplication {
         public Dictionary<string, Tuple<int, ClientResponse>> ClientTable { get; }
 
         public string Leader { get; set; }
-        public IProcessRequestVisitor State { get; set; }
+        public IMessageVisitor State { get; set; }
 
         // Attribute Atomic operations
         private int viewNumber;
@@ -45,7 +45,7 @@ namespace StateMachineReplication {
             this.Leader = "1";
             this.Logger = new List<ClientRequest>();
             this.ClientTable = new Dictionary<string, Tuple<int, ClientResponse>>();
-            this.State = new NormalStateProcessRequest(this, this.MessageServiceClient);
+            this.State = new NormalStateMessageProcessor(this, this.MessageServiceClient);
             this.viewNumber = 0;
             this.opNumber = 0;
             this.commitNumber = 0;

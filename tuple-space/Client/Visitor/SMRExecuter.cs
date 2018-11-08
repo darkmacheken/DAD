@@ -7,11 +7,11 @@ using MessageService;
 using MessageService.Serializable;
 
 namespace Client.Visitor {
-    public class Executor : IBasicVisitor {
+    public class SMRExecuter : IBasicVisitor {
         private readonly MessageServiceClient messageServiceClient;
         private readonly Client client;
 
-        public Executor(MessageServiceClient messageServiceClient, Client client) {
+        public SMRExecuter(MessageServiceClient messageServiceClient, Client client) {
             this.messageServiceClient = messageServiceClient;
             this.client = client;
         }

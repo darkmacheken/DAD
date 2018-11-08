@@ -14,7 +14,7 @@ namespace Client {
 
                 MessageServiceClient messageServiceClient = new MessageServiceClient(client.Url);
 
-                client.Script.Accept(new Executor(messageServiceClient, client));
+                client.Script.Accept(new SMRExecuter(messageServiceClient, client));
 
                 Console.ReadLine();
             } catch (Exception ex) {

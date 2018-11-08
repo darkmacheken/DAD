@@ -60,7 +60,7 @@
     <Compile Include="Client.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="ScriptStructure\BasicNode.cs" />
-    <Compile Include="Visitor\Executor.cs" />
+    <Compile Include="Visitor\SMRExecuter.cs" />
     <Compile Include="Visitor\Writer.cs" />
     <Compile Include="Visitor\IBasicVisitor.cs" />
     <Compile Include="Exceptions\IncorrectCommandException.cs" />

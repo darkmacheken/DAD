@@ -5,14 +5,14 @@ using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
 
-namespace StateMachineReplication.StateProcess {
-    public class NormalStateProcessRequest : IProcessRequestVisitor {
-        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(NormalStateProcessRequest));
+namespace StateMachineReplication.StateProcessor {
+    public class NormalStateMessageProcessor : IMessageVisitor {
+        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(NormalStateMessageProcessor));
 
         private readonly MessageServiceClient messageServiceClient;
         private readonly ReplicaState replicaState;
 
-        public NormalStateProcessRequest(ReplicaState replicaState, MessageServiceClient messageServiceClient) {
+        public NormalStateMessageProcessor(ReplicaState replicaState, MessageServiceClient messageServiceClient) {
             this.messageServiceClient = messageServiceClient;
             this.replicaState = replicaState;
         }
@@ -33,13 +33,12 @@ namespace StateMachineReplication.StateProcess {
                 // TODO: Call upper Layer
                 Log.Debug($"Requesting Add({addRequest.Tuple}) to Tuple Space.");
 
-                int commitNumber;
-                int viewNumber;
+                // increment commit number
+                int commitNumber = this.replicaState.IncrementCommitNumber();
+                int viewNumber = this.replicaState.ViewNumber;
+
+                // update client table
                 lock (this.replicaState) {
-                    viewNumber = this.replicaState.ViewNumber;
-                    // increment commit number
-                    commitNumber = this.replicaState.IncrementCommitNumber();
-                    // update client table
                     this.replicaState.ClientTable[addRequest.ClientId] = new Tuple<int, ClientResponse>(addRequest.RequestNumber, null);
                 }
                 // commit execution
@@ -63,12 +62,17 @@ namespace StateMachineReplication.StateProcess {
             } else {
                 // TODO: Call upper Layer
                 Log.Debug($"Requesting Take({takeRequest.Tuple}) to Tuple Space.");
+
                 // increment commit number
-                this.replicaState.IncrementCommitNumber();
+                int commitNumber = this.replicaState.IncrementCommitNumber();
+                int viewNumber = this.replicaState.ViewNumber;
+
                 // update client table
                 lock (this.replicaState) {
                     this.replicaState.ClientTable[takeRequest.ClientId] = new Tuple<int, ClientResponse>(takeRequest.RequestNumber, null);
                 }
+                // commit execution
+                this.SendCommit(viewNumber, commitNumber);
                 return null;
             }
         }
@@ -90,11 +94,15 @@ namespace StateMachineReplication.StateProcess {
                 Log.Debug($"Requesting Read({readRequest.Tuple}) to Tuple Space.");
 
                 // increment commit number
-                this.replicaState.IncrementCommitNumber();
+                int commitNumber = this.replicaState.IncrementCommitNumber();
+                int viewNumber = this.replicaState.ViewNumber;
+
                 // update client table
                 lock (this.replicaState) {
                     this.replicaState.ClientTable[readRequest.ClientId] = new Tuple<int, ClientResponse>(readRequest.RequestNumber, null);
                 }
+                // commit execution
+                this.SendCommit(viewNumber, commitNumber);
                 return null;
             }
         }
@@ -158,7 +166,7 @@ namespace StateMachineReplication.StateProcess {
             int opNumber = this.SendPrepareMessage(clientRequest);
 
             // Now we need to execute the request in our turn.
-            // Polling in 25ms in 25ms
+            // Polling in 25ms in 25ms to check if last operation has been committed
             while (this.replicaState.CommitNumber != (opNumber - 1)) {
                 Thread.Sleep(25);
             }

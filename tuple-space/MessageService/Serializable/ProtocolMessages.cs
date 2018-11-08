@@ -19,7 +19,7 @@ namespace MessageService.Serializable {
             this.CommitNumber = commitNumber;
         }
 
-        public IResponse Accept(IProcessRequestVisitor visitor) {
+        public IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitPrepareMessage(this);
         }
 
@@ -58,7 +58,7 @@ namespace MessageService.Serializable {
             this.CommitNumber = commitNumber;
         }
 
-        public IResponse Accept(IProcessRequestVisitor visitor) {
+        public IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitCommitMessage(this);
         }
 

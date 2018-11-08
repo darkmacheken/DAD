@@ -35,7 +35,7 @@ namespace MessageService {
     }
 
     public interface IMessage {
-        IResponse Accept(IProcessRequestVisitor visitor);
+        IResponse Accept(IMessageVisitor visitor);
     }
 
     public interface IResponse { }

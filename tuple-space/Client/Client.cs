@@ -1,9 +1,6 @@
 using System;
-using Client.Exceptions;
-using Client.ScriptStructure;
-using Client.Visitor;
 
-using MessageService;
+using Client.ScriptStructure;
 
 namespace Client {
     public class Client {
