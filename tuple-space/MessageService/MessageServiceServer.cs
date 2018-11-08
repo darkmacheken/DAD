@@ -31,13 +31,15 @@ namespace MessageService {
                 typeof(MessageServiceServer));
         }
 
-        public IResponse Request(ISenderInformation info, IMessage message) {
+        public IResponse Request(IMessage message) {
             int delay = this.seedRandom.Next(this.minDelay, this.maxDelay);
 
-            Log.Debug($"Request (Process Delay = {delay} ms) with parameters: info: {info}, message: {message}");
+            Log.Debug($"Request (Process Delay = {delay} ms) with parameters: message: {message}");
 
             Thread.Sleep(delay);
-            return this.protocol.ProcessRequest(info, message);
+            IResponse response = this.protocol.ProcessRequest(message);
+            Log.Debug($"Response: {response}");
+            return response;
         }
 
         public void Freeze() {

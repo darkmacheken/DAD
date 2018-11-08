@@ -1,19 +1,29 @@
 ﻿using System;
 
+using Client.Exceptions;
+using Client.Visitor;
+
 using MessageService;
 
 namespace Client {
-    class Program {
+    public static class Program {
         static void Main(string[] args) {
+            try {
+                //TODO check arguments
+                Client client = new Client(args[0], new Uri(args[1]), args[2]);
 
-            Uri[] urls = { new Uri("tcp://localhost:8080"), new Uri("tcp://localhost:8081"), new Uri("tcp://localhost:8082") };
+                MessageServiceClient messageServiceClient = new MessageServiceClient(client.Url);
 
-            string clientId = args[0];
-            Uri url = new Uri(args[1]);
+                client.Script.Accept(new Executor(messageServiceClient, client));
 
-            MessageServiceClient messageServiceClient = new MessageServiceClient(url);
-
-            Console.ReadLine();
+                Console.ReadLine();
+            } catch (Exception ex) {
+                if (ex is IncorrectCommandException || ex is BlockEndMissingException) {
+                    Console.WriteLine(ex.Message);
+                } else {
+                    throw;
+                }
+            }
         }
     }
 }

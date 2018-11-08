@@ -6,7 +6,7 @@ using StateMachineReplication;
 
 namespace Server
 {
-    class Program {
+    public static class Program {
         static void Main(string[] args) {
             string serverId = args[0];
             IProtocol protocol = new SMRProtocol();

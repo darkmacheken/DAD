@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Threading;
@@ -26,11 +25,11 @@ namespace MessageService {
             this.channel = channel;
         }
 
-        public IResponse Request(ISenderInformation info, IMessage message, Uri url) {
-            Log.Debug($"Request called with parameters: info: {info}, message: {message}, url: {url}");
+        public IResponse Request(IMessage message, Uri url) {
+            Log.Debug($"Request called with parameters: message: {message}, url: {url}");
             MessageServiceServer server = GetRemoteMessageService(url);
             if (server != null) {
-                return server.Request(info, message);
+                return server.Request(message);
             }
 
             Log.Error($"Request: Could not resolve url {url}");
@@ -38,14 +37,14 @@ namespace MessageService {
 
         }
 
-        public IResponse Request(ISenderInformation info, IMessage message, Uri url, int timeout) {
-            Log.Debug($"Request called with parameters: info: {info}, message: {message}, url: {url}, timeout: {timeout}");
+        public IResponse Request(IMessage message, Uri url, int timeout) {
+            Log.Debug($"Request called with parameters: message: {message}, url: {url}, timeout: {timeout}");
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             
             // Create Task and run async
             Task<IResponse> task = Task<IResponse>.Factory.StartNew(() => {
                 using (cancellationTokenSource.Token.Register(() => Log.Debug("Task cancellation requested"))) {
-                    return this.Request(info, message, url);
+                    return this.Request(message, url);
                 }
             }, cancellationTokenSource.Token);
 
@@ -62,12 +61,11 @@ namespace MessageService {
         }
 
         public IResponses RequestMulticast(
-            ISenderInformation info,
             IMessage message,
             Uri[] urls,
             int numberResponsesToWait,
             int timeout) {
-            Log.Debug($"Request called with parameters: info: {info}, message: {message}, url: {urls},"
+            Log.Debug($"Multicast Request called with parameters: message: {message}, url: {urls},"
                       + $"numberResponsesToWait: {numberResponsesToWait}, timeout: {timeout}");
 
             if (numberResponsesToWait > urls.Length) {
@@ -85,7 +83,7 @@ namespace MessageService {
                 // Create Task and run async
                 Task<IResponse> task = Task<IResponse>.Factory.StartNew(() => {
                     using (cancellationTokenSource.Token.Register(() => Log.Debug("Task cancellation requested"))) {
-                        return this.Request(info, message, url);
+                        return this.Request(message, url);
                     }
                 }, cancellationTokenSource.Token);
 
@@ -98,7 +96,13 @@ namespace MessageService {
             Task<IResponses> getRequests = Task<IResponses>.Factory.StartNew(
                 () => {
                     using (
-                        cancellationTs.Token.Register(() => Log.Debug("Task cancellation requested"))) {
+                        cancellationTs.Token.Register(() => {
+                            Log.Debug("Task multicast cancellation requested. Cancel all request Tasks.");
+                            // cancel all other tasks
+                            foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
+                                cancellationTokenSource.Cancel();
+                            }
+                        })) {
                         IResponses responses = new Responses();
                         int countMessages = 0;
                         while (countMessages < numberResponsesToWait) {
@@ -128,6 +132,7 @@ namespace MessageService {
             bool taskCompleted = timeout < 0 ? getRequests.Wait(-1) : getRequests.Wait(timeout);
 
             if (taskCompleted) {
+                Log.Debug($"Multicast response: {getRequests.Result}");
                 return getRequests.Result;
             }
 

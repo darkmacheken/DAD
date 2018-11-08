@@ -47,10 +47,11 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="Serializables\ProtocolMessages.cs" />
     <Compile Include="ServerMessageWrapper.cs" />
     <Compile Include="MessageServiceClient.cs" />
     <Compile Include="MessageServiceServer.cs" />
-    <Compile Include="Serializables\ClientRequest.cs" />
+    <Compile Include="Serializables\ClientRequestResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Visitor\IProcessRequestVisitor.cs" />
     <Compile Include="Wrappers.cs" />

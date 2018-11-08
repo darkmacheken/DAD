@@ -18,16 +18,14 @@ namespace Client.Visitor {
 
         public void VisitAdd(Add add) {
             this.messageServiceClient.Request(
-                new ClientInfo(this.client.Id),
-                new AddRequest(add.Tuple),
+                new AddRequest(this.client.Id, this.client.GetRequestNumber(), add.Tuple),
                 new Uri("tcp://localhost:8080"));
             //TODO: the url cannot be hard coded.
         }
 
         public void VisitRead(Read read) {
             this.messageServiceClient.Request(
-                new ClientInfo(this.client.Id),
-                new ReadRequest(read.Tuple),
+                new ReadRequest(this.client.Id, this.client.GetRequestNumber(), read.Tuple),
                 new Uri("tcp://localhost:8080"));
             //TODO: the url cannot be hard coded.
         }
@@ -53,8 +51,7 @@ namespace Client.Visitor {
 
         public void VisitTake(Take take) {
             this.messageServiceClient.Request(
-                new ClientInfo(this.client.Id),
-                new TakeRequest(take.Tuple),
+                new TakeRequest(this.client.Id, this.client.GetRequestNumber(), take.Tuple),
                 new Uri("tcp://localhost:8080"));
             //TODO: the url cannot be hard coded.
         }

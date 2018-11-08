@@ -14,15 +14,12 @@ namespace StateMachineReplication {
 
         public ReplicaState ReplicaState { get; private set; }
 
-        private MessageServiceClient messageServiceClient;
-        
         public void Init(MessageServiceClient messageServiceClient, Uri url, string serverId) {
-            this.messageServiceClient = messageServiceClient;
-            this.ReplicaState = new ReplicaState(url, serverId);
+            this.ReplicaState = new ReplicaState(messageServiceClient, url, serverId);
         }
 
-        public IResponse ProcessRequest(ISenderInformation info, IMessage message) {
-            return message.Accept(ReplicaState.State, info);
+        public IResponse ProcessRequest(IMessage message) {
+            return message.Accept(ReplicaState.State);
         }
     }
 }
