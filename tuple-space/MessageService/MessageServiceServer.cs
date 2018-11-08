@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Reflection;
 using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels.Tcp;
 using System.Threading;
 
 using log4net;
 
 namespace MessageService {
     public class MessageServiceServer : MarshalByRefObject, IMessageServiceServer {
-        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(IMessageServiceServer));
+        private static readonly ILog Log = LogManager.GetLogger(typeof(IMessageServiceServer));
 
         private readonly IProtocol protocol;
         private readonly int minDelay;

@@ -4,7 +4,7 @@ using System.Threading;
 using Client.ScriptStructure;
 
 using MessageService;
-using MessageService.Messages;
+using MessageService.Serializable;
 
 namespace Client.Visitor {
     public class Executor : IBasicVisitor {

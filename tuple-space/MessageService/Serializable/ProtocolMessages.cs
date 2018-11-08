@@ -2,7 +2,7 @@
 
 using MessageService.Visitor;
 
-namespace MessageService.Messages {
+namespace MessageService.Serializable {
     [Serializable]
     public class PrepareMessage : IMessage {
         public string ServerId { get; set; }
@@ -12,19 +12,19 @@ namespace MessageService.Messages {
         public int CommitNumber { get; set; }
 
         public PrepareMessage(string serverId, int viewNumber, ClientRequest clientRequest, int opNumber, int commitNumber) {
-            ServerId = serverId;
-            ViewNumber = viewNumber;
-            ClientRequest = clientRequest;
-            OpNumber = opNumber;
-            CommitNumber = commitNumber;
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.ClientRequest = clientRequest;
+            this.OpNumber = opNumber;
+            this.CommitNumber = commitNumber;
         }
 
         public IResponse Accept(IProcessRequestVisitor visitor) {
-            return visitor.AcceptPrepareMessage(this);
+            return visitor.VisitPrepareMessage(this);
         }
 
         public override string ToString() {
-            return $"{{ Server ID: {this.ServerId}, View Number: {this.ViewNumber}, Client Request: {ClientRequest}, "
+            return $"{{ Server ID: {this.ServerId}, View Number: {this.ViewNumber}, Client Request: {this.ClientRequest}, "
                    + $"Op Number: {this.OpNumber}, Commit Number: {this.CommitNumber} }}";
         }
     }
@@ -36,9 +36,9 @@ namespace MessageService.Messages {
         public int OpNumber { get; set; }
 
         public PrepareOk(string serverId, int viewNumber, int opNumber) {
-            ServerId = serverId;
-            ViewNumber = viewNumber;
-            OpNumber = opNumber;
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.OpNumber = opNumber;
         }
 
         public override string ToString() {
@@ -53,13 +53,13 @@ namespace MessageService.Messages {
         public int CommitNumber { get; set; }
 
         public CommitMessage(string serverId, int viewNumber, int commitNumber) {
-            ServerId = serverId;
-            ViewNumber = viewNumber;
-            CommitNumber = commitNumber;
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.CommitNumber = commitNumber;
         }
 
         public IResponse Accept(IProcessRequestVisitor visitor) {
-            return visitor.AcceptCommitMessage(this);
+            return visitor.VisitCommitMessage(this);
         }
 
         public override string ToString() {

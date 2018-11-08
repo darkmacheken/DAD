@@ -18,7 +18,7 @@ namespace MessageService {
             //create tcp channel
             this.channel = new TcpChannel(myUrl.Port);
             ChannelServices.RegisterChannel(this.channel, false);
-            Log.Info("TCP channel created.");
+            Log.Info($"TCP channel created at {myUrl.Host}:{myUrl.Port}.");
         }
 
         public MessageServiceClient(TcpChannel channel) {
@@ -32,7 +32,7 @@ namespace MessageService {
                 return server.Request(message);
             }
 
-            Log.Error($"Request: Could not resolve url {url}");
+            Log.Error($"Request: Could not resolve url {url.Host}:{url.Port}");
             return null;
 
         }
@@ -43,7 +43,7 @@ namespace MessageService {
             
             // Create Task and run async
             Task<IResponse> task = Task<IResponse>.Factory.StartNew(() => {
-                using (cancellationTokenSource.Token.Register(() => Log.Debug("Task cancellation requested"))) {
+                using (cancellationTokenSource.Token.Register(() => Log.Warn("Request: Task cancellation was issued."))) {
                     return this.Request(message, url);
                 }
             }, cancellationTokenSource.Token);
@@ -93,53 +93,57 @@ namespace MessageService {
 
             // Wait until numberResponsesToWait
             CancellationTokenSource cancellationTs = new CancellationTokenSource();
-            Task<IResponses> getRequests = Task<IResponses>.Factory.StartNew(
-                () => {
-                    using (
-                        cancellationTs.Token.Register(() => {
-                            Log.Debug("Task multicast cancellation requested. Cancel all request Tasks.");
-                            // cancel all other tasks
-                            foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
-                                cancellationTokenSource.Cancel();
-                            }
-                        })) {
-                        IResponses responses = new Responses();
-                        int countMessages = 0;
-                        while (countMessages < numberResponsesToWait) {
-                            int index = Task.WaitAny(tasks.ToArray());
-
-                            responses.Add(tasks[index].Result);
-                            countMessages++;
-
-                            // cancel task
-                            cancellations[index].Cancel();
-
-                            // dispose task in the lists
-                            tasks.RemoveAt(index);
-                            cancellations.RemoveAt(index);
-                        }
-
-                        // cancel all other tasks
-                        foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
-                            cancellationTokenSource.Cancel();
-                        }
-
-                        return responses;
+            Task<IResponses> getResponses = Task<IResponses>.Factory.StartNew(
+                () => { using (cancellationTs.Token.Register(() => { CancelSubTasks(cancellations); })) {
+                        return GetResponses(numberResponsesToWait, tasks, cancellations);
                     }
                 },
                 cancellationTs.Token);
 
-            bool taskCompleted = timeout < 0 ? getRequests.Wait(-1) : getRequests.Wait(timeout);
+            bool taskCompleted = timeout < 0 ? getResponses.Wait(-1) : getResponses.Wait(timeout);
 
             if (taskCompleted) {
-                Log.Debug($"Multicast response: {getRequests.Result}");
-                return getRequests.Result;
+                Log.Debug($"Multicast response: {getResponses.Result}");
+                return getResponses.Result;
             }
 
             // Cancel task, we don't care anymore.
             cancellationTs.Cancel();
             Log.Error("Multicast Request: Timeout, abort thread request.");
             return null;
+        }
+
+        private static IResponses GetResponses(int numberResponsesToWait, List<Task<IResponse>> tasks, List<CancellationTokenSource> cancellations) {
+            IResponses responses = new Responses();
+            int countMessages = 0;
+            while (countMessages < numberResponsesToWait) {
+                int index = Task.WaitAny(tasks.ToArray());
+
+                responses.Add(tasks[index].Result);
+                countMessages++;
+
+                // cancel task
+                cancellations[index].Cancel();
+
+                // dispose task in the lists
+                tasks.RemoveAt(index);
+                cancellations.RemoveAt(index);
+            }
+
+            // cancel all other tasks
+            foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
+                cancellationTokenSource.Cancel();
+            }
+
+            return responses;
+        }
+
+        private static void CancelSubTasks(List<CancellationTokenSource> cancellations) {
+            Log.Warn("Multicast Request: cancellation was issued. Cancel all request Tasks.");
+            // cancel all other tasks
+            foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
+                cancellationTokenSource.Cancel();
+            }
         }
 
         private static MessageServiceServer GetRemoteMessageService(Uri url) {

@@ -2,7 +2,7 @@
 using System.Threading;
 
 using MessageService;
-using MessageService.Messages;
+using MessageService.Serializable;
 using MessageService.Visitor;
 
 namespace StateMachineReplication.StateProcess {
@@ -17,7 +17,7 @@ namespace StateMachineReplication.StateProcess {
             this.replicaState = replicaState;
         }
 
-        public IResponse AcceptAddRequest(AddRequest addRequest) {
+        public IResponse VisitAddRequest(AddRequest addRequest) {
             if (!this.replicaState.IAmTheLeader()) {
                 // I'm not the leader. 
                 // TODO: return who's the leader
@@ -48,7 +48,7 @@ namespace StateMachineReplication.StateProcess {
             }
         }
 
-        public IResponse AcceptTakeRequest(TakeRequest takeRequest) {
+        public IResponse VisitTakeRequest(TakeRequest takeRequest) {
             if (!this.replicaState.IAmTheLeader()) {
                 // I'm not the leader. 
                 // TODO: return who's the leader
@@ -73,7 +73,7 @@ namespace StateMachineReplication.StateProcess {
             }
         }
 
-        public IResponse AcceptReadRequest(ReadRequest readRequest) {
+        public IResponse VisitReadRequest(ReadRequest readRequest) {
             if (!this.replicaState.IAmTheLeader()) {
                 // I'm not the leader. 
                 //TODO: return who's the leader
@@ -99,7 +99,7 @@ namespace StateMachineReplication.StateProcess {
             }
         }
 
-        public IResponse AcceptPrepareMessage(PrepareMessage prepareMessage) {
+        public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
             if (this.replicaState.OpNumber != (prepareMessage.OpNumber - 1)) {
                 // The replica isn't in sync. Some information was lost
                 // TODO: Update state. Must block until condition is met.
@@ -117,7 +117,7 @@ namespace StateMachineReplication.StateProcess {
             return new PrepareOk(this.replicaState.ServerId, replicaView, opNumber);
         }
 
-        public IResponse AcceptCommitMessage(CommitMessage commitMessage) {
+        public IResponse VisitCommitMessage(CommitMessage commitMessage) {
             // Needs to wait for previous executions or request must arrive.
             // Polling in 25ms in 25ms
             while (this.replicaState.CommitNumber != (commitMessage.CommitNumber - 1) &&

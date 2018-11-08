@@ -2,7 +2,7 @@
 
 using MessageService.Visitor;
 
-namespace MessageService.Messages {
+namespace MessageService.Serializable {
     [Serializable]
     public abstract class ClientRequest : IMessage {
         public string ClientId { get; set; }
@@ -27,7 +27,7 @@ namespace MessageService.Messages {
         public ReadRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
         public override IResponse Accept(IProcessRequestVisitor visitor) {
-            return visitor.AcceptReadRequest(this);
+            return visitor.VisitReadRequest(this);
         }
 
         public override string ToString() {
@@ -40,7 +40,7 @@ namespace MessageService.Messages {
         public AddRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
         public override IResponse Accept(IProcessRequestVisitor visitor) {
-            return visitor.AcceptAddRequest(this);
+            return visitor.VisitAddRequest(this);
         }
 
         public override string ToString() {
@@ -53,7 +53,7 @@ namespace MessageService.Messages {
         public TakeRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
         public override IResponse Accept(IProcessRequestVisitor visitor) {
-            return visitor.AcceptTakeRequest(this);
+            return visitor.VisitTakeRequest(this);
         }
 
         public override string ToString() {
@@ -68,9 +68,9 @@ namespace MessageService.Messages {
         public string Result { get; set; }
 
         public ClientResponse(int requestNumber, int viewNumber, string result) {
-            RequestNumber = requestNumber;
-            ViewNumber = viewNumber;
-            Result = result;
+            this.RequestNumber = requestNumber;
+            this.ViewNumber = viewNumber;
+            this.Result = result;
         }
     }
 }

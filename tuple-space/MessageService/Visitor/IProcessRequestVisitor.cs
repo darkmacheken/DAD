@@ -1,15 +1,15 @@
-﻿using MessageService.Messages;
+﻿using MessageService.Serializable;
 
 namespace MessageService.Visitor {
     public interface IProcessRequestVisitor {
-        IResponse AcceptAddRequest(AddRequest addRequest);
+        IResponse VisitAddRequest(AddRequest addRequest);
 
-        IResponse AcceptTakeRequest(TakeRequest takeRequest);
+        IResponse VisitTakeRequest(TakeRequest takeRequest);
 
-        IResponse AcceptReadRequest(ReadRequest readRequest);
+        IResponse VisitReadRequest(ReadRequest readRequest);
 
-        IResponse AcceptPrepareMessage(PrepareMessage prepareMessage);
+        IResponse VisitPrepareMessage(PrepareMessage prepareMessage);
 
-        IResponse AcceptCommitMessage(CommitMessage commitMessage);
+        IResponse VisitCommitMessage(CommitMessage commitMessage);
     }
 }

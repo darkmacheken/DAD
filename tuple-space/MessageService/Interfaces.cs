@@ -1,5 +1,5 @@
-﻿using MessageService.Visitor;
-using System;
+﻿using System;
+using MessageService.Visitor;
 
 namespace MessageService {
     /// <summary>

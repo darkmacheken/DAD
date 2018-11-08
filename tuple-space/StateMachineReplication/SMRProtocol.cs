@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Reflection;
 
 using log4net;
 
 using MessageService;
 
-using StateMachineReplication.StateProcess;
-
 namespace StateMachineReplication {
    
     public class SMRProtocol : IProtocol {
-        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(SMRProtocol));
+        private static readonly ILog Log = LogManager.GetLogger(typeof(SMRProtocol));
 
         public ReplicaState ReplicaState { get; private set; }
 
@@ -19,7 +16,7 @@ namespace StateMachineReplication {
         }
 
         public IResponse ProcessRequest(IMessage message) {
-            return message.Accept(ReplicaState.State);
+            return message.Accept(this.ReplicaState.State);
         }
     }
 }
