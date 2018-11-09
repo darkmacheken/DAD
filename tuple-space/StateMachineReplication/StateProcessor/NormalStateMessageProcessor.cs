@@ -39,10 +39,11 @@ namespace StateMachineReplication.StateProcessor {
                 int commitNumber = this.replicaState.IncrementCommitNumber();
                 int viewNumber = this.replicaState.ViewNumber;
 
-                ClientResponse clientResponse = new ClientResponse(commitNumber, viewNumber, "");
+                ClientResponse clientResponse = new ClientResponse(commitNumber, viewNumber, string.Empty);
                 // update client table
                 lock (this.replicaState) {
-                    this.replicaState.ClientTable[addRequest.ClientId] = new Tuple<int, ClientResponse>(addRequest.RequestNumber, clientResponse);
+                    this.replicaState.ClientTable[addRequest.ClientId] = 
+                        new Tuple<int, ClientResponse>(addRequest.RequestNumber, clientResponse);
                 }
                 // commit execution
                 this.SendCommit(viewNumber, commitNumber);
@@ -65,9 +66,7 @@ namespace StateMachineReplication.StateProcessor {
             } else {
                 Log.Debug($"Requesting Take({takeRequest.Tuple}) to Tuple Space.");
                 TupleSpace.Tuple takeTuple = this.replicaState.TupleSpace.Take(takeRequest.Tuple);
-
                 
-
                 // increment commit number
                 int commitNumber = this.replicaState.IncrementCommitNumber();
                 int viewNumber = this.replicaState.ViewNumber;
@@ -75,7 +74,8 @@ namespace StateMachineReplication.StateProcessor {
                 ClientResponse clientResponse= new ClientResponse(commitNumber, viewNumber, takeTuple.ToString());
                 // update client table
                 lock (this.replicaState) {
-                    this.replicaState.ClientTable[takeRequest.ClientId] = new Tuple<int, ClientResponse>(takeRequest.RequestNumber, clientResponse);
+                    this.replicaState.ClientTable[takeRequest.ClientId] = 
+                        new Tuple<int, ClientResponse>(takeRequest.RequestNumber, clientResponse);
                 }
                 // commit execution
                 this.SendCommit(viewNumber, commitNumber);
@@ -106,7 +106,8 @@ namespace StateMachineReplication.StateProcessor {
                 ClientResponse clientResponse = new ClientResponse(commitNumber, viewNumber, readTuple.ToString());
                 // update client table
                 lock (this.replicaState) {
-                    this.replicaState.ClientTable[readRequest.ClientId] = new Tuple<int, ClientResponse>(readRequest.RequestNumber, clientResponse);
+                    this.replicaState.ClientTable[readRequest.ClientId] = 
+                        new Tuple<int, ClientResponse>(readRequest.RequestNumber, clientResponse);
                 }
                 // commit execution
                 this.SendCommit(viewNumber, commitNumber);
@@ -143,7 +144,7 @@ namespace StateMachineReplication.StateProcessor {
             ClientRequest request = this.replicaState.Logger[commitMessage.CommitNumber];
             Log.Debug($"Requesting {this.replicaState.Logger[commitMessage.CommitNumber]} to Tuple Space.");
 
-            string result = "";
+            string result = string.Empty;
             if (request.GetType() == typeof(AddRequest)) {
                 AddRequest addRequest = (AddRequest)request;
                 this.replicaState.TupleSpace.Add(addRequest.Tuple);
@@ -163,7 +164,8 @@ namespace StateMachineReplication.StateProcessor {
             // update client table
             ClientRequest clientRequest = this.replicaState.Logger[commitMessage.CommitNumber];
             lock (this.replicaState) {
-                this.replicaState.ClientTable[clientRequest.ClientId] = new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientResponse);
+                this.replicaState.ClientTable[clientRequest.ClientId] = 
+                    new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientResponse);
             }
             return null;
         }
