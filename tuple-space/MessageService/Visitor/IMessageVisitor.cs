@@ -11,5 +11,7 @@ namespace MessageService.Visitor {
         IResponse VisitPrepareMessage(PrepareMessage prepareMessage);
 
         IResponse VisitCommitMessage(CommitMessage commitMessage);
+
+        IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest);
     }
 }

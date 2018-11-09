@@ -9,13 +9,17 @@ namespace MessageService.Serializable {
         public string Tuple { get; set; }
         public int RequestNumber { get; set; }
 
+        protected ClientRequest(string clientId) {
+            this.ClientId = clientId;
+        }
+
         protected ClientRequest(string clientId, int requestNumber, string tuple) {
             this.ClientId = clientId;
             this.RequestNumber = requestNumber;
             this.Tuple = tuple;
         }
 
-        public abstract IResponse Accept(IMessageVisitor visitor);
+        public abstract MessageService.IResponse Accept(IMessageVisitor visitor);
 
         public override string ToString() {
             return $"{this.Tuple}";
@@ -26,7 +30,7 @@ namespace MessageService.Serializable {
     public class ReadRequest : ClientRequest {
         public ReadRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
-        public override IResponse Accept(IMessageVisitor visitor) {
+        public override MessageService.IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitReadRequest(this);
         }
 
@@ -39,7 +43,7 @@ namespace MessageService.Serializable {
     public class AddRequest : ClientRequest {
         public AddRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
-        public override IResponse Accept(IMessageVisitor visitor) {
+        public override MessageService.IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitAddRequest(this);
         }
 
@@ -52,7 +56,7 @@ namespace MessageService.Serializable {
     public class TakeRequest : ClientRequest {
         public TakeRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
-        public override IResponse Accept(IMessageVisitor visitor) {
+        public override MessageService.IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitTakeRequest(this);
         }
 
@@ -62,7 +66,7 @@ namespace MessageService.Serializable {
     }
 
     [Serializable]
-    public class ClientResponse : IResponse {
+    public class ClientResponse : MessageService.IResponse {
         public int RequestNumber { get; set; }
         public int ViewNumber { get; set; }
         public string Result { get; set; }

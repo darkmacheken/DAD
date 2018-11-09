@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 
 using MessageService;
@@ -144,6 +145,11 @@ namespace StateMachineReplication.StateProcessor {
                 this.replicaState.ClientTable[clientRequest.ClientId] = new Tuple<int, ClientResponse>(clientRequest.RequestNumber, null);
             }
             return null;
+        }
+
+        public IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest) {
+            Uri[] viewConfiguration = this.replicaState.Configuration.Values.ToArray();
+            return new HandShakeResponse(Protocol.StateMachineReplication, this.replicaState.ViewNumber, viewConfiguration);
         }
 
         private int RunProcessRequestProtocol(ClientRequest clientRequest) {
