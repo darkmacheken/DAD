@@ -115,7 +115,7 @@ namespace TupleSpace {
             }
         }
 
-        public void UnlockAndTake(string clientId, int requestNumber, Tuple tupleToRemove) {
+        public void UnlockAndTake(string clientId, int requestNumber, string tupleString) {
             /* unlock and take are "atomic" */
             List<Tuple> lockedTuples = this.GetLockedTuplesByClientRequest(clientId, requestNumber);
             lock (this.Tuples) {
@@ -123,6 +123,7 @@ namespace TupleSpace {
                 foreach (Tuple tuple in lockedTuples)  {
                     tuple.Locked = false;
                 }
+                Tuple tupleToRemove = new Tuple(tupleString);
                 this.Tuples.Remove(tupleToRemove);
             }
             if (!this.LockedTuples.TryRemove(new System.Tuple<string, int>(clientId, requestNumber),

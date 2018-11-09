@@ -61,6 +61,10 @@ namespace TupleSpace {
             return true;
         }
 
+        public bool Equals(Tuple tuple) {
+            return this.stringTuple.Equals(tuple.ToString());
+        }
+
         public override string ToString() {
             return this.stringTuple;
         }
