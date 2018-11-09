@@ -6,8 +6,6 @@ using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
 
-using StateMachineReplication.StateProcessor;
-
 using XuLiskov.StateProcessor;
 
 namespace StateMachineReplication {
@@ -21,6 +19,9 @@ namespace StateMachineReplication {
         public Dictionary<string, Tuple<int, ClientResponse>> ClientTable { get; }
 
         public IMessageVisitor State { get; set; }
+
+        // Tuple Space
+        public TupleSpace.TupleSpace TupleSpace { get; }
 
         // Attribute Atomic operations
         private int viewNumber;
