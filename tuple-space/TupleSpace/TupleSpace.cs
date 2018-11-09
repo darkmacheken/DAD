@@ -27,8 +27,10 @@ namespace TupleSpace {
             Console.WriteLine("Added Tuple: " + tuple);
         }
 
-        /* This method returns the first tuple found that matches the tupleString.
-           If no match was found, it returns null. */
+        /// <summary>
+        /// This method returns the first tuple found that matches the tupleString.
+        /// If no match was found, it returns null.
+        /// </summary>
         public Tuple Read(string tupleString) {
             Tuple tuple = new Tuple(tupleString);
             List<Tuple> matches = new List<Tuple>();
@@ -43,8 +45,11 @@ namespace TupleSpace {
             return null;
         }
 
-        /* This method removes returns the first tuple found that matches the tupleString.
-           If no match was found, it returns null. */
+        /// <summary>
+        /// This method removes and returns the first tuple found that matches the tupleString.
+        /// If no match was found, it returns null.
+        /// </summary>
+        /// <param name="tupleString">Tuple string.</param>
         public Tuple Take(string tupleString) {
             Tuple tuple = new Tuple(tupleString);
             List<Tuple> matches = new List<Tuple>();
@@ -90,9 +95,11 @@ namespace TupleSpace {
 
         public void Unlock(string clientId, int requestNumber) {
             List<Tuple> lockedTuples = this.GetLockedTuplesByClientRequest(clientId, requestNumber);
-            /* unlock all matches */    
-            foreach (Tuple tuple in lockedTuples) {
-                tuple.Locked = false;
+            /* unlock all matches */  
+            lock(this.Tuples) {
+                foreach (Tuple tuple in lockedTuples) {
+                    tuple.Locked = false;
+                }
             }
             if(!this.LockedTuples.TryRemove(new System.Tuple<string, int>(clientId, requestNumber), 
                                             out List<Tuple> tupleValues)) {
@@ -102,13 +109,17 @@ namespace TupleSpace {
 
         public void UnlockAndTake(string clientId, int requestNumber, Tuple tupleToRemove) {
             /* unlock and take are "atomic" */
+            List<Tuple> lockedTuples = this.GetLockedTuplesByClientRequest(clientId, requestNumber);
             lock (this.Tuples) {
-                List<Tuple> lockedTuples = this.GetLockedTuplesByClientRequest(clientId, requestNumber);
                 /* unlock all matches */
                 foreach (Tuple tuple in lockedTuples)  {
                     tuple.Locked = false;
                 }
                 this.Tuples.Remove(tupleToRemove);
+            }
+            if (!this.LockedTuples.TryRemove(new System.Tuple<string, int>(clientId, requestNumber),
+                                            out List<Tuple> tupleValues)) {
+                throw new RequestDontHaveLocks();
             }
         }
 

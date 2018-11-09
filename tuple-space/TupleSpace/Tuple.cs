@@ -16,48 +16,6 @@ namespace TupleSpace {
             this.ParseInput(tuple);
         }
 
-        private void ParseInput(string tuple) {
-
-            List<string> fields = new List<string>(); //stores the parameters of the tuple.
-            string pattern = @"(\"".*?\"")+|((\d)+)|(\w)*?(\(.*?\))|(\w)+";
-            Regex rgx = new Regex(pattern);
-
-            foreach (Match match in rgx.Matches(tuple)) {
-                fields.Add(match.Value);
-            }
-
-            foreach (string field in fields) {
-                /* If the field is a string */
-                if (field.StartsWith("\"", StringComparison.Ordinal)) {
-                    /* Add to Tuple fields*/
-                    Field<string> newField = new Field<string>(field.Substring(1, field.Length - 2)); //remove the quotes
-                    this.Fields.Add(newField);
-                } else { /* The field is an object */
-                    char[] charSeparators = { ',', '(', ')' };
-                    string[] res = field.Split(charSeparators);
-
-                    /* If it's a name - className or null */
-                    if (res.Length == 1) {
-                        /* Add to Tuple fields*/
-                        Field<string> newField = new Field<string>(field);
-                        this.Fields.Add(newField);
-                    } else { /* It's a constructor */
-                        string className = res[0];
-                        List<string> args = res.ToList().GetRange(1, res.Length - 2); //removes the className and the last match (empty)
-                        List<object> parsedArgs = this.ParseArgs(args);
-
-                        /* Instantiate object from the given constructor */
-                        Type t = Type.GetType(string.Concat("TupleSpace.", className));
-                        object obj = Activator.CreateInstance(t, parsedArgs.ToArray());
-
-                        /* Add to Tuple fields*/
-                        Field<object> newField = new Field<object>(obj);
-                        this.Fields.Add(newField);
-                    }
-                }
-            }
-        }
-
         public bool Match(Tuple searchTuple) {
            
             if (this.Fields.Count != searchTuple.Fields.Count) {
@@ -101,6 +59,56 @@ namespace TupleSpace {
             return true;
         }
 
+        public override string ToString() {
+            string fields = string.Empty;
+            foreach (IField field in this.Fields) {
+                fields = string.Concat(fields, field.Value, " ");
+            }
+            return $"Tuple: <{fields}>";
+        }
+
+        private void ParseInput(string tuple) {
+
+            List<string> fields = new List<string>(); //stores the parameters of the tuple.
+            string pattern = @"(\"".*?\"")+|((\d)+)|(\w)*?(\(.*?\))|(\w)+";
+            Regex rgx = new Regex(pattern);
+
+            foreach (Match match in rgx.Matches(tuple)) {
+                fields.Add(match.Value);
+            }
+
+            foreach (string field in fields) {
+                /* If the field is a string */
+                if (field.StartsWith("\"", StringComparison.Ordinal)) {
+                    /* Add to Tuple fields*/
+                    Field<string> newField = new Field<string>(field.Substring(1, field.Length - 2)); //remove the quotes
+                    this.Fields.Add(newField);
+                } else { /* The field is an object */
+                    char[] charSeparators = { ',', '(', ')' };
+                    string[] res = field.Split(charSeparators);
+
+                    /* If it's a name - className or null */
+                    if (res.Length == 1) {
+                        /* Add to Tuple fields*/
+                        Field<string> newField = new Field<string>(field);
+                        this.Fields.Add(newField);
+                    } else { /* It's a constructor */
+                        string className = res[0];
+                        List<string> args = res.ToList().GetRange(1, res.Length - 2); //removes the className and the last match (empty)
+                        List<object> parsedArgs = this.ParseArgs(args);
+
+                        /* Instantiate object from the given constructor */
+                        Type t = Type.GetType(string.Concat("TupleSpace.", className));
+                        object obj = Activator.CreateInstance(t, parsedArgs.ToArray());
+
+                        /* Add to Tuple fields*/
+                        Field<object> newField = new Field<object>(obj);
+                        this.Fields.Add(newField);
+                    }
+                }
+            }
+        }
+
         private List<object> ParseArgs(List<string> args) {
             List<object> parsedArgs = new List<object>();
 
@@ -117,14 +125,6 @@ namespace TupleSpace {
                 }
             }
             return parsedArgs;
-        }
-
-        public override string ToString() {
-            string fields = string.Empty;
-            foreach (IField field in this.Fields)  {
-                fields = string.Concat(fields, field.Value, " ");
-            }
-            return $"Tuple: <{fields}>";
         }
     }
 
