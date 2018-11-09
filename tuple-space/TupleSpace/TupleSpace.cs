@@ -21,34 +21,44 @@ namespace TupleSpace {
 
         public void Add(string tupleString) {
             Tuple tuple = new Tuple(tupleString);
-            this.Tuples.Add(tuple);
+            lock(this.Tuples) {
+                this.Tuples.Add(tuple);
+            }
             Console.WriteLine("Added Tuple: " + tuple);
         }
 
+        /* This method returns the first tuple found that matches the tupleString.
+           If no match was found, it returns null. */
         public Tuple Read(string tupleString) {
             Tuple tuple = new Tuple(tupleString);
-            Console.WriteLine("\nRead Tuple: " + tuple);
-            List<Tuple> matches = this.SearchTuples(tuple);
-            Console.WriteLine("Matches: -------------------------- ");
-            foreach (Tuple match in matches) {
-                Console.WriteLine(match);
+            List<Tuple> matches = new List<Tuple>();
+            lock (this.Tuples) {
+                matches = this.SearchTuples(tuple);
             }
-            Console.WriteLine("-----------------------------------");
-            return matches[0];
+            if (matches.Count > 0) {
+                Console.WriteLine("\nRead Tuple: " + matches[0]);
+                return matches[0];
+            }
+            Console.WriteLine("\nRead: No Tuple was found.");
+            return null;
         }
 
+        /* This method removes returns the first tuple found that matches the tupleString.
+           If no match was found, it returns null. */
         public Tuple Take(string tupleString) {
             Tuple tuple = new Tuple(tupleString);
-            Console.WriteLine("\nTake Tuple: " + tuple);
-            List<Tuple> matches = this.SearchTuples(tuple);
-            Console.WriteLine("Matches: -------------------------- ");
-            foreach (Tuple match in matches) {
-                Console.WriteLine(match);
+            List<Tuple> matches = new List<Tuple>();
+            lock (this.Tuples) {
+                matches = this.SearchTuples(tuple);
+                if (matches.Count > 0) {
+                    Tuple removed = matches[0];
+                    this.Tuples.Remove(removed);
+                    Console.WriteLine("\nTake Tuple: " + removed);
+                    return removed;
+                }
             }
-            Console.WriteLine("-----------------------------------");
-            Tuple removed = matches[0];
-            this.Tuples.Remove(removed);
-            return removed;
+            Console.WriteLine("\nTake: No Tuple was found.");
+            return null;
         }
 
         public List<Tuple> GetAndLock(string clientId, int requestNumber, string tupleString) {
@@ -93,7 +103,11 @@ namespace TupleSpace {
         public void UnlockAndTake(string clientId, int requestNumber, Tuple tupleToRemove) {
             /* unlock and take are "atomic" */
             lock (this.Tuples) {
-                this.Unlock(clientId, requestNumber);
+                List<Tuple> lockedTuples = this.GetLockedTuplesByClientRequest(clientId, requestNumber);
+                /* unlock all matches */
+                foreach (Tuple tuple in lockedTuples)  {
+                    tuple.Locked = false;
+                }
                 this.Tuples.Remove(tupleToRemove);
             }
         }

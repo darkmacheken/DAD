@@ -12,6 +12,7 @@ namespace TupleSpace {
 
         public Tuple(string tuple) {
             this.Fields = new List<IField>();
+            this.Locked = false;
             this.ParseInput(tuple);
         }
 
@@ -119,9 +120,9 @@ namespace TupleSpace {
         }
 
         public override string ToString() {
-            string fields = "";
+            string fields = string.Empty;
             foreach (IField field in this.Fields)  {
-                string.Concat(fields, field.Value, " ");
+                fields = string.Concat(fields, field.Value, " ");
             }
             return $"Tuple: <{fields}>";
         }
