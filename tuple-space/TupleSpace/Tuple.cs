@@ -9,11 +9,13 @@ namespace TupleSpace {
         // A tuple consists in a list of fields.
         public List<IField> Fields { get; set; }
         public bool Locked { get; set; }
+        private readonly string stringTuple;
 
         public Tuple(string tuple) {
             this.Fields = new List<IField>();
             this.Locked = false;
             this.ParseInput(tuple);
+            this.stringTuple = tuple;
         }
 
         public bool Match(Tuple searchTuple) {
@@ -60,11 +62,7 @@ namespace TupleSpace {
         }
 
         public override string ToString() {
-            string fields = string.Empty;
-            foreach (IField field in this.Fields) {
-                fields = string.Concat(fields, field.Value, " ");
-            }
-            return $"Tuple: <{fields}>";
+            return this.stringTuple;
         }
 
         private void ParseInput(string tuple) {
@@ -134,8 +132,6 @@ namespace TupleSpace {
         Type Type { get; set; }
 
         object Value { get; set; }
-
-        string ToString();
     }
 
     public class Field<TDataType> : IField {
@@ -148,9 +144,5 @@ namespace TupleSpace {
         public Type Type { get; set; }
 
         public object Value { get; set; }
-
-        public override string ToString() {
-            return $"{this.Type}({this.Value})";
-        }
     }
 }
