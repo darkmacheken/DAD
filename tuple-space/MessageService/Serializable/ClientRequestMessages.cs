@@ -3,11 +3,13 @@
 using MessageService.Visitor;
 
 namespace MessageService.Serializable {
+
     [Serializable]
     public abstract class ClientRequest : IMessage {
         public string ClientId { get; set; }
         public string Tuple { get; set; }
         public int RequestNumber { get; set; }
+        public int ViewNumber { get; set; }
 
         protected ClientRequest(string clientId) {
             this.ClientId = clientId;
@@ -17,6 +19,13 @@ namespace MessageService.Serializable {
             this.ClientId = clientId;
             this.RequestNumber = requestNumber;
             this.Tuple = tuple;
+        }
+
+        protected ClientRequest(int viewNumber, string clientId, int requestNumber, string tuple) {
+            this.ClientId = clientId;
+            this.RequestNumber = requestNumber;
+            this.Tuple = tuple;
+            this.ViewNumber = viewNumber;
         }
 
         public abstract IResponse Accept(IMessageVisitor visitor);
@@ -70,6 +79,11 @@ namespace MessageService.Serializable {
         public int RequestNumber { get; set; }
         public int ViewNumber { get; set; }
         public string Result { get; set; }
+
+        public ClientResponse(int requestNumber, int viewNumber) {
+            this.RequestNumber = requestNumber;
+            this.ViewNumber = viewNumber;
+        }
 
         public ClientResponse(int requestNumber, int viewNumber, string result) {
             this.RequestNumber = requestNumber;

@@ -1,7 +1,5 @@
 ﻿using System;
 
-using log4net.Config;
-
 using MessageService;
 
 using StateMachineReplication;
@@ -22,7 +20,7 @@ namespace Server
                 protocolToUse = new SMRProtocol();
             } else if(protocol.Equals("XL")) {
                 Log.Info("Using Xu-Liskov protocol.");
-                // TODO: assign XL protocol
+                protocolToUse = new XLProtocol();
             } else {
                 Log.Fatal("Unknown protocol.");
                 Environment.Exit(1);

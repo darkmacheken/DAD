@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 
 using MessageService.Visitor;
 
 namespace MessageService.Serializable {
+
+    // SMR ----------------------------------------------------------------------------------------------------------------
     [Serializable]
     public class PrepareMessage : IMessage {
         public string ServerId { get; set; }
@@ -64,6 +67,47 @@ namespace MessageService.Serializable {
 
         public override string ToString() {
             return $"{{ Server ID: {this.ServerId}, View Number: {this.ViewNumber}, Commit Number: {this.CommitNumber} }}";
+        }
+    }
+
+    // XL ----------------------------------------------------------------------------------------------------------------
+
+    public class GetAndLockRequest : ClientRequest {
+        public GetAndLockRequest(int viewNumber, string clientId, int requestNumber, string tuple) :
+            base(viewNumber, clientId, requestNumber, tuple) { }
+
+        public override IResponse Accept(IMessageVisitor visitor) {
+            return visitor.VisitGetAndLock(this);
+        }
+
+        public override string ToString() {
+            return $"{{ {base.ToString()}, {this.ClientId}, {this.RequestNumber}, {this.Tuple} }}";
+        }
+    }
+
+    public class GetAndLockResponse : ClientResponse {
+        public List<string> Tuples { get; set; }
+
+        public GetAndLockResponse(int requestNumber, int viewNumber, List<string> tuples ) : 
+            base(requestNumber, viewNumber) {
+            this.Tuples = tuples;
+        }
+
+        public override string ToString() {
+            return $"{{ RequestNumber: {this.RequestNumber}, ViewNumber: {this.ViewNumber}, Tuples: {this.Tuples}}}";
+        }
+    }
+
+    public class UnlockRequest : ClientRequest {
+        public UnlockRequest(int viewNumber, string clientId, int requestNumber)
+            : base(viewNumber, clientId, requestNumber, "") { }
+
+        public override IResponse Accept(IMessageVisitor visitor) {
+            return visitor.VisitUnlockRequest(this);
+        }
+
+        public override string ToString() {
+            return $"{{Client ID: {this.ClientId}, RequestNumber: {this.RequestNumber}}}";
         }
     }
 }

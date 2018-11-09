@@ -13,5 +13,9 @@ namespace MessageService.Visitor {
         IResponse VisitCommitMessage(CommitMessage commitMessage);
 
         IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest);
+
+        IResponse VisitGetAndLock(GetAndLockRequest getAndLockRequest);
+
+        IResponse VisitUnlockRequest(UnlockRequest unlockRequest);
     }
 }

@@ -30,7 +30,7 @@ namespace Client {
                         break;
                     case Protocol.XuLiskov:
                         Log.Info("Handshake: Using Xu-Liskov protocol");
-                        // TODO: call the visitor
+                        client.Script.Accept(v: new XLExecuter(messageServiceClient, client));
                         break;
                     default:
                         Log.Fatal("Unknown protocol.");

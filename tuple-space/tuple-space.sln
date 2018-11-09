@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StateMachineReplication", "StateMachineReplication\StateMachineReplication.csproj", "{507E8427-542F-4BBC-97BE-F047A8EE3CE6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XuLiskov", "XuLiskov\XuLiskov.csproj", "{F4029D6B-A26A-4683-8B8E-A53F005797AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +40,10 @@ Global
 		{507E8427-542F-4BBC-97BE-F047A8EE3CE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{507E8427-542F-4BBC-97BE-F047A8EE3CE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{507E8427-542F-4BBC-97BE-F047A8EE3CE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4029D6B-A26A-4683-8B8E-A53F005797AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4029D6B-A26A-4683-8B8E-A53F005797AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4029D6B-A26A-4683-8B8E-A53F005797AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4029D6B-A26A-4683-8B8E-A53F005797AE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

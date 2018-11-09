@@ -4,17 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2A311A66-C414-4D66-84DE-BA7B361E99E7}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Server</RootNamespace>
-    <AssemblyName>Server</AssemblyName>
+    <ProjectGuid>{F4029D6B-A26A-4683-8B8E-A53F005797AE}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>XuLiskov</RootNamespace>
+    <AssemblyName>XuLiskov</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -24,7 +23,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -46,30 +44,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
+    <Compile Include="ReplicaState.cs" />
+    <Compile Include="StateProcessor\NormalStateMessageProcessor.cs" />
+    <Compile Include="XLProtocol.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MessageService\MessageService.csproj">
       <Project>{13222cd1-28c6-4869-a653-a11cf61bc95a}</Project>
       <Name>MessageService</Name>
     </ProjectReference>
-    <ProjectReference Include="..\StateMachineReplication\StateMachineReplication.csproj">
-      <Project>{507e8427-542f-4bbc-97be-f047a8ee3ce6}</Project>
-      <Name>StateMachineReplication</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\XuLiskov\XuLiskov.csproj">
-      <Project>{f4029d6b-a26a-4683-8b8e-a53f005797ae}</Project>
-      <Name>XuLiskov</Name>
+    <ProjectReference Include="..\TupleSpace\TupleSpace.csproj">
+      <Project>{f3fb05ed-40a7-4c96-b94b-b926893cff7c}</Project>
+      <Name>TupleSpace</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="log4net.config.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
