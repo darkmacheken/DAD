@@ -9,7 +9,7 @@ namespace TupleSpace {
         // A tuple consists in a list of fields.
         public List<IField> Fields { get; set; }
         public bool Locked { get; set; }
-        private string stringTuple;
+        private readonly string stringTuple;
 
         public Tuple(string tuple) {
             this.Fields = new List<IField>();
@@ -132,8 +132,6 @@ namespace TupleSpace {
         Type Type { get; set; }
 
         object Value { get; set; }
-
-        string ToString();
     }
 
     public class Field<TDataType> : IField {
