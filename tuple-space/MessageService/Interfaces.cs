@@ -1,6 +1,5 @@
 ﻿using System;
 
-using MessageService.Serializable;
 using MessageService.Visitor;
 
 namespace MessageService {
