@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,7 +10,7 @@ using StateMachineReplication;
 namespace XuLiskov.StateProcessor {
     public class NormalStateMessageProcessor : IMessageVisitor {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(NormalStateMessageProcessor));
-
+      
         private ReplicaState replicaState;
         private MessageServiceClient messageServiceClient;
 
