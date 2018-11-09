@@ -34,6 +34,9 @@ namespace StateMachineReplication {
         public int CommitNumber { get { return this.commitNumber; } }
         public int IncrementCommitNumber() { return Interlocked.Increment(ref this.commitNumber); }
 
+        // Tuple Space
+        public TupleSpace.TupleSpace TupleSpace { get; }
+
         public ReplicaState(MessageServiceClient messageServiceClient, Uri url, string serverId) {
             this.MessageServiceClient = messageServiceClient;
             this.ServerId = serverId;
@@ -49,6 +52,8 @@ namespace StateMachineReplication {
             this.viewNumber = 0;
             this.opNumber = 0;
             this.commitNumber = 0;
+
+            this.TupleSpace = new TupleSpace.TupleSpace();
         }
 
         public bool IAmTheLeader() {
