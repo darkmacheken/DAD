@@ -95,7 +95,7 @@ namespace MessageService {
             IResponses responses = new Responses();
             CancellationTokenSource cancellationTs = new CancellationTokenSource();
             Task getResponses = Task.Factory.StartNew(
-                () => { using (cancellationTs.Token.Register(() => { CancelSubTasks(cancellations); })) {
+                () => { using (cancellationTs.Token.Register(() => { MessageServiceClient.CancelSubTasks(cancellations); })) {
                         GetResponses(responses, numberResponsesToWait, tasks, cancellations);
                     }
                 },
@@ -136,7 +136,7 @@ namespace MessageService {
             }
 
             // Cancel remaining sub-tasks
-            CancelSubTasks(cancellations);
+            MessageServiceClient.CancelSubTasks(cancellations);
         }
 
         private static void CancelSubTasks(List<CancellationTokenSource> cancellations) {
