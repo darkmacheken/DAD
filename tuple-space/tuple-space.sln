@@ -1,15 +1,18 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2048
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{D667A288-97A8-447C-8558-ECAE7FF8B3EE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TupleSpace", "TupleSpace\TupleSpace.csproj", "{F3FB05ED-40A7-4C96-B94B-B926893CFF7C}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageService", "MessageService\MessageService.csproj", "{13222CD1-28C6-4869-A653-A11CF61BC95A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{2A311A66-C414-4D66-84DE-BA7B361E99E7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StateMachineReplication", "StateMachineReplication\StateMachineReplication.csproj", "{507E8427-542F-4BBC-97BE-F047A8EE3CE6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuppetMaster", "PuppetMaster\PuppetMaster.csproj", "{E00B43C7-21CD-4D78-B771-2A88AB9DE81D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,6 +40,10 @@ Global
 		{507E8427-542F-4BBC-97BE-F047A8EE3CE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{507E8427-542F-4BBC-97BE-F047A8EE3CE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{507E8427-542F-4BBC-97BE-F047A8EE3CE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E00B43C7-21CD-4D78-B771-2A88AB9DE81D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E00B43C7-21CD-4D78-B771-2A88AB9DE81D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E00B43C7-21CD-4D78-B771-2A88AB9DE81D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E00B43C7-21CD-4D78-B771-2A88AB9DE81D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
