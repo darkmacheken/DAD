@@ -9,6 +9,10 @@ namespace MessageService.Serializable {
         public string Tuple { get; set; }
         public int RequestNumber { get; set; }
 
+        protected ClientRequest(string clientId) {
+            this.ClientId = clientId;
+        }
+
         protected ClientRequest(string clientId, int requestNumber, string tuple) {
             this.ClientId = clientId;
             this.RequestNumber = requestNumber;
