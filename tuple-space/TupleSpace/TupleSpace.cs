@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,6 +63,7 @@ namespace TupleSpace {
                     Tuple removed = matches[0];
                     this.Tuples.Remove(removed);
                     Console.WriteLine("\nTake Tuple: " + removed);
+
                     this.PrintTupleSpace();
                     return removed;
                 }

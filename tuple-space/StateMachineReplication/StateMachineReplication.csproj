@@ -54,6 +54,10 @@
       <Project>{13222cd1-28c6-4869-a653-a11cf61bc95a}</Project>
       <Name>MessageService</Name>
     </ProjectReference>
+    <ProjectReference Include="..\TupleSpace\TupleSpace.csproj">
+      <Project>{f3fb05ed-40a7-4c96-b94b-b926893cff7c}</Project>
+      <Name>TupleSpace</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
