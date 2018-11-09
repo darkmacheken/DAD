@@ -2,20 +2,16 @@ using System.Collections.Generic;
 
 namespace Client.ScriptStructure {
     public abstract class Block : BasicNode {
-        protected List<BasicNode> nodes;
+        protected readonly List<BasicNode> nodes;
 
         private Parser parser;
 
-        public Block() : base() {
+        public Block() {
             this.nodes = new List<BasicNode>();
             this.parser = new Parser();
         }
 
-        public List<BasicNode> Nodes {
-            get {
-                return nodes;
-            }
-        }
+        public List<BasicNode> Nodes => this.nodes;
 
         public void AddNode(BasicNode node) {
             this.nodes.Add(node);

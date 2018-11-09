@@ -1,40 +1,34 @@
 using System;
-using Client.Exceptions;
+
 using Client.ScriptStructure;
-using Client.Visitor;
 
 namespace Client {
     public class Client {
-        private string id;
-        private string url;
-        private Script script;
-        private Parser parser;
+        public string Id { get; }
+        public Uri Url { get; }
 
-        public Client(string id, string url, string scriptFile) {
-            this.id = id;
-            this.url = url;
+        private int requestNumber;
+
+        public Script Script { get; }
+        private readonly Parser parser;
+
+        public Client(string id, Uri url, string scriptFile) {
+            this.Id = id;
+            this.Url = url;
+            this.Script = new Script();
             this.parser = new Parser();
-            this.setScript(scriptFile);
+            this.SetScript(scriptFile);
+            this.requestNumber = 0;
         }
 
-        private void setScript(string scriptFile) {
-            string[] lines = System.IO.File.ReadAllLines(path: @scriptFile); //relative to the executable's folder
-            this.script = new Script();
-            script.Parse(parser, lines, 0);
-            Writer writer = new Writer();
-            script.Accept(writer); //todo this is for testing, will delete further on
+        public int GetRequestNumber() {
+            return this.requestNumber++;
         }
 
-        static void Main(string[] args) {
-            try {
-                Client c1 = new Client(args[0], args[1], args[2]);
-            } catch (Exception ex) {
-                if (ex is IncorrectCommandException || ex is BlockEndMissingException) {
-                    Console.WriteLine(ex.Message);
-                } else {
-                    throw;
-                }
-            }
+        private void SetScript(string scriptFile) {
+            string[] lines = System.IO.File.ReadAllLines(@scriptFile); // relative to the executable's folder
+            this.Script.Parse(this.parser, lines, 0);
         }
+        
     }
 }
