@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace MessageService {
     public class Responses : IResponses {
-        private readonly List<IResponse> responses;
+        private readonly ConcurrentBag<IResponse> responses;
 
         public Responses() {
-            this.responses = new List<IResponse>();
+            this.responses = new ConcurrentBag<IResponse>();
         }
 
         public void Add(IResponse response) {
