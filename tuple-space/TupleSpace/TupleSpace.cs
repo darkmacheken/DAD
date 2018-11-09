@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading;
 using TupleSpace.Exceptions;
 
 namespace TupleSpace {
 
     public class TupleSpace {
         public List<Tuple> Tuples { get; set; }
-        public ConcurrentDictionary<Tuple<string,int>, List<Tuple>> LockedTuples {get; set; }
+        public ConcurrentDictionary<System.Tuple<string,int>, List<Tuple>> LockedTuples {get; set; }
 
         public TupleSpace() {
             this.Tuples = new List<Tuple>();
@@ -48,7 +47,7 @@ namespace TupleSpace {
             }
             Console.WriteLine("-----------------------------------");
             Tuple removed = matches[0];
-            Tuples.Remove(removed);
+            this.Tuples.Remove(removed);
             return removed;
         }
 
@@ -81,7 +80,7 @@ namespace TupleSpace {
 
         public void Unlock(string clientId, int requestNumber) {
             List<Tuple> lockedTuples = this.GetLockedTuplesByClientRequest(clientId, requestNumber);
-            /* unlock all matches */
+            /* unlock all matches */    
             foreach (Tuple tuple in lockedTuples) {
                 tuple.Locked = false;
             }
@@ -91,11 +90,11 @@ namespace TupleSpace {
             }
         }
 
-        public void UnlockAndTake(string clientId, int requestNumber, Tuple tupletoremove) {
+        public void UnlockAndTake(string clientId, int requestNumber, Tuple tupleToRemove) {
             /* unlock and take are "atomic" */
             lock (this.Tuples) {
                 this.Unlock(clientId, requestNumber);
-                this.Tuples.Remove(tupletoremove);
+                this.Tuples.Remove(tupleToRemove);
             }
         }
 

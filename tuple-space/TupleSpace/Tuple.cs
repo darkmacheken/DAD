@@ -108,11 +108,11 @@ namespace TupleSpace {
                     continue;
                 }
                 if (arg.Contains("\"")) { //if arg is a string
-                    string parsed_arg = Regex.Replace(arg, @"(\s|\"")*", string.Empty);
-                    parsedArgs.Add(parsed_arg);
+                    string parsedArg = Regex.Replace(arg, @"(\s|\"")*", string.Empty);
+                    parsedArgs.Add(parsedArg);
                 } else { //if arg is an int
-                    int parsed_arg = int.Parse(arg);
-                    parsedArgs.Add(parsed_arg);
+                    int parsedArg = int.Parse(arg);
+                    parsedArgs.Add(parsedArg);
                 }
             }
             return parsedArgs;
@@ -137,9 +137,9 @@ namespace TupleSpace {
         string ToString();
     }
 
-    public class Field<DataType> : IField {
+    public class Field<TDataType> : IField {
 
-        public Field(DataType value) {
+        public Field(TDataType value) {
             this.Value = value;
             this.Type = value.GetType();
         }
@@ -149,7 +149,7 @@ namespace TupleSpace {
         public object Value { get; set; }
 
         public override string ToString() {
-            return $"{Type}({Value})";
+            return $"{this.Type}({this.Value})";
         }
     }
 }
