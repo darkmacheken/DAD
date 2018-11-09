@@ -92,10 +92,11 @@ namespace MessageService {
             }
 
             // Wait until numberResponsesToWait
+            IResponses responses = new Responses();
             CancellationTokenSource cancellationTs = new CancellationTokenSource();
-            Task<IResponses> getResponses = Task<IResponses>.Factory.StartNew(
+            Task getResponses = Task.Factory.StartNew(
                 () => { using (cancellationTs.Token.Register(() => { CancelSubTasks(cancellations); })) {
-                        return GetResponses(numberResponsesToWait, tasks, cancellations);
+                        GetResponses(responses, numberResponsesToWait, tasks, cancellations);
                     }
                 },
                 cancellationTs.Token);
@@ -103,8 +104,8 @@ namespace MessageService {
             bool taskCompleted = timeout < 0 ? getResponses.Wait(-1) : getResponses.Wait(timeout);
 
             if (taskCompleted) {
-                Log.Debug($"Multicast response: {getResponses.Result}");
-                return getResponses.Result;
+                Log.Debug($"Multicast response: {responses}");
+                return responses;
             }
 
             // Cancel task, we don't care anymore.
@@ -113,8 +114,12 @@ namespace MessageService {
             return null;
         }
 
-        private static IResponses GetResponses(int numberResponsesToWait, List<Task<IResponse>> tasks, List<CancellationTokenSource> cancellations) {
-            IResponses responses = new Responses();
+        private static void GetResponses(
+            IResponses responses,
+            int numberResponsesToWait, 
+            List<Task<IResponse>> tasks, 
+            List<CancellationTokenSource> cancellations) {
+
             int countMessages = 0;
             while (countMessages < numberResponsesToWait) {
                 int index = Task.WaitAny(tasks.ToArray());
@@ -130,12 +135,8 @@ namespace MessageService {
                 cancellations.RemoveAt(index);
             }
 
-            // cancel all other tasks
-            foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
-                cancellationTokenSource.Cancel();
-            }
-
-            return responses;
+            // Cancel remaining sub-tasks
+            CancelSubTasks(cancellations);
         }
 
         private static void CancelSubTasks(List<CancellationTokenSource> cancellations) {
