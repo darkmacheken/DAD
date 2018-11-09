@@ -7,8 +7,6 @@ using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
 
-using TupleSpace;
-
 namespace StateMachineReplication.StateProcessor {
     public class NormalStateMessageProcessor : IMessageVisitor {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(NormalStateMessageProcessor));
