@@ -63,14 +63,22 @@ namespace MessageService.Serializable {
 
     [Serializable]
     public class TakeRequest : ClientRequest {
+        public int RequestNumberLock { get; set; }
+
         public TakeRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
+
+        public TakeRequest(string clientId, int requestNumber, int requestNumberLock, string tuple)
+            : base(clientId, requestNumber, tuple) {
+            this.RequestNumberLock = requestNumberLock;
+        }
 
         public override IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitTakeRequest(this);
         }
 
         public override string ToString() {
-            return $"{{ take {base.ToString()}, {this.ClientId}, {this.RequestNumber} }}";
+            return $"{{ take: {{tuple: {base.ToString()}, ClientId: {this.ClientId}," + 
+                   $"RequestNumber: {this.RequestNumber}, RequestUnlockNumber: {this.RequestNumberLock} }} }}";
         }
     }
 

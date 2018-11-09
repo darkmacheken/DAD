@@ -116,10 +116,10 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
-            if (this.replicaState.OpNumber != (prepareMessage.OpNumber - 1)) {
+            while (this.replicaState.OpNumber != (prepareMessage.OpNumber - 1)) {
                 // The replica isn't in sync. Some information was lost
                 // TODO: Update state. Must block until condition is met.
-                throw new NotImplementedException();
+                Thread.Sleep(25);
             }
 
             int opNumber;

@@ -72,6 +72,7 @@ namespace MessageService.Serializable {
 
     // XL ----------------------------------------------------------------------------------------------------------------
 
+    [Serializable]
     public class GetAndLockRequest : ClientRequest {
         public GetAndLockRequest(int viewNumber, string clientId, int requestNumber, string tuple) :
             base(viewNumber, clientId, requestNumber, tuple) { }
@@ -85,6 +86,7 @@ namespace MessageService.Serializable {
         }
     }
 
+    [Serializable]
     public class GetAndLockResponse : ClientResponse {
         public List<string> Tuples { get; set; }
 
@@ -98,9 +100,17 @@ namespace MessageService.Serializable {
         }
     }
 
+    [Serializable]
     public class UnlockRequest : ClientRequest {
+        public int RequestNumberLock { get; set; }
+
         public UnlockRequest(int viewNumber, string clientId, int requestNumber)
-            : base(viewNumber, clientId, requestNumber, "") { }
+            : base(viewNumber, clientId, requestNumber, string.Empty) { }
+
+        public UnlockRequest(int viewNumber, string clientId, int requestNumber, int requestNumberLock)
+            : base(viewNumber, clientId, requestNumber, string.Empty) {
+            this.RequestNumberLock = requestNumberLock;
+        }
 
         public override IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitUnlockRequest(this);

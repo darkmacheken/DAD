@@ -53,7 +53,7 @@ namespace XuLiskov.StateProcessor {
                 Log.Debug($"Requesting Take({takeRequest.Tuple}) to Tuple Space.");
                 this.replicaState.TupleSpace.UnlockAndTake(
                     takeRequest.ClientId, 
-                    takeRequest.RequestNumber, 
+                    takeRequest.RequestNumberLock, 
                     takeRequest.Tuple);
 
                 int viewNumber = this.replicaState.ViewNumber;
@@ -131,7 +131,7 @@ namespace XuLiskov.StateProcessor {
                 return this.replicaState.ClientTable[unlockRequest.ClientId].Item2;
             } else {
                 Log.Debug($"Requesting Unlock({unlockRequest.Tuple}) to Tuple Space.");
-                this.replicaState.TupleSpace.Unlock(unlockRequest.ClientId, unlockRequest.RequestNumber);
+                this.replicaState.TupleSpace.Unlock(unlockRequest.ClientId, unlockRequest.RequestNumberLock);
 
                 int viewNumber = this.replicaState.ViewNumber;
 

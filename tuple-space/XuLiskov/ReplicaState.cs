@@ -40,6 +40,8 @@ namespace StateMachineReplication {
             this.ClientTable = new Dictionary<string, Tuple<int, ClientResponse>>();
             this.State = new NormalStateMessageProcessor(this, this.MessageServiceClient);
             this.viewNumber = 0;
+
+            this.TupleSpace = new TupleSpace.TupleSpace();
         }
     }
 }
