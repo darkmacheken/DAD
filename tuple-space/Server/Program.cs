@@ -25,7 +25,7 @@ namespace Server
                 // TODO: assign XL protocol
             } else {
                 Log.Fatal("Unknown protocol.");
-                System.Environment.Exit(1);
+                Environment.Exit(1);
             }
 
             // create message service wrapper

@@ -34,7 +34,7 @@ namespace Client {
                         break;
                     default:
                         Log.Fatal("Unknown protocol.");
-                        System.Environment.Exit(1);
+                        Environment.Exit(1);
                         break;
                 }
 

@@ -19,7 +19,7 @@ namespace MessageService.Serializable {
             this.Tuple = tuple;
         }
 
-        public abstract MessageService.IResponse Accept(IMessageVisitor visitor);
+        public abstract IResponse Accept(IMessageVisitor visitor);
 
         public override string ToString() {
             return $"{this.Tuple}";
@@ -30,7 +30,7 @@ namespace MessageService.Serializable {
     public class ReadRequest : ClientRequest {
         public ReadRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
-        public override MessageService.IResponse Accept(IMessageVisitor visitor) {
+        public override IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitReadRequest(this);
         }
 
@@ -43,7 +43,7 @@ namespace MessageService.Serializable {
     public class AddRequest : ClientRequest {
         public AddRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
-        public override MessageService.IResponse Accept(IMessageVisitor visitor) {
+        public override IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitAddRequest(this);
         }
 
@@ -56,7 +56,7 @@ namespace MessageService.Serializable {
     public class TakeRequest : ClientRequest {
         public TakeRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
-        public override MessageService.IResponse Accept(IMessageVisitor visitor) {
+        public override IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitTakeRequest(this);
         }
 
@@ -66,7 +66,7 @@ namespace MessageService.Serializable {
     }
 
     [Serializable]
-    public class ClientResponse : MessageService.IResponse {
+    public class ClientResponse : IResponse {
         public int RequestNumber { get; set; }
         public int ViewNumber { get; set; }
         public string Result { get; set; }
