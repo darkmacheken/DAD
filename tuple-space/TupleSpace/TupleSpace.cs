@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using TupleSpace.Exceptions;
 
 namespace TupleSpace {
@@ -71,7 +72,7 @@ namespace TupleSpace {
             return null;
         }
 
-        public List<Tuple> GetAndLock(string clientId, int requestNumber, string tupleString) {
+        public List<string> GetAndLock(string clientId, int requestNumber, string tupleString) {
             Tuple searchTuple = new Tuple(tupleString);
             List<Tuple> lockedTuples = new List<Tuple>();
             bool refuse = false;
@@ -95,7 +96,8 @@ namespace TupleSpace {
             else if (!this.LockedTuples.TryAdd(new System.Tuple<string, int>(clientId, requestNumber), lockedTuples)){
                 throw new RequestAlreadyHasLocks();
             }
-            return lockedTuples;
+            List<string> lockedTuplesString = lockedTuples.Select(s => s.ToString()).ToList();
+            return lockedTuplesString;
         }
 
         public void Unlock(string clientId, int requestNumber) {
