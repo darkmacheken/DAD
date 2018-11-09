@@ -1,0 +1,22 @@
+Console 1:
+	cd DAD/tuple-space
+	Server/bin/Debug/Server.exe 1 tcp://localhost:8080 0 0 XL
+
+Console 2:
+	cd DAD/tuple-space
+	Server/bin/Debug/Server.exe 2 tcp://localhost:8081 0 0 XL
+
+Console 3:
+	cd DAD/tuple-space
+	Server/bin/Debug/Server.exe 3 tcp://localhost:8082 0 0 XL
+
+Console 4:
+	cd DAD/tuple-space
+	Client/bin/Debug/Client.exe 1 tcp://localhost:8083 Client/sample-scripts/sampleClientScript.txt
+
+Console 5:
+	cd DAD/tuple-space
+	Client/bin/Debug/Client.exe 2 tcp://localhost:8084 Client/sample-scripts/sampleClientScript.txt
+
+
+This configuration uses the XL protocol. In order to run the SMR protocol, change the last argument in the server run to SMR.
