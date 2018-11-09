@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 using log4net;
 
+using MessageService.Serializable;
+
 namespace MessageService {
     
     public class MessageServiceClient : IMessageServiceClient {
