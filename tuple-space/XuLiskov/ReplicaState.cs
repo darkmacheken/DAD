@@ -6,8 +6,6 @@ using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
 
-using StateMachineReplication.StateProcessor;
-
 using XuLiskov.StateProcessor;
 
 namespace StateMachineReplication {
