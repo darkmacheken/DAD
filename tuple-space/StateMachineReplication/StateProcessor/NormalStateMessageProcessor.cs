@@ -142,16 +142,16 @@ namespace StateMachineReplication.StateProcessor {
             }
 
             ClientRequest request = this.replicaState.Logger[commitMessage.CommitNumber];
-            Log.Debug($"Requesting {this.replicaState.Logger[commitMessage.CommitNumber]} to Tuple Space.");
+            Log.Debug($"Requesting {request} to Tuple Space.");
 
             string result = string.Empty;
-            if (request.GetType() == typeof(AddRequest)) {
+            if (request is AddRequest) {
                 AddRequest addRequest = (AddRequest)request;
                 this.replicaState.TupleSpace.Add(addRequest.Tuple);
-            } else if (request.GetType() == typeof(TakeRequest)) {
+            } else if (request is TakeRequest) {
                 TakeRequest takeRequest = (TakeRequest)request;
                 result = this.replicaState.TupleSpace.Take(takeRequest.Tuple).ToString();
-            } else if (request.GetType() == typeof(ReadRequest)) {
+            } else if (request is ReadRequest) {
                 ReadRequest readRequest = (ReadRequest)request;
                 result = this.replicaState.TupleSpace.Read(readRequest.Tuple).ToString();
             }
