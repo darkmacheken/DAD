@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Linq;
 using System.Threading;
 
@@ -150,6 +151,14 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest) {
             Uri[] viewConfiguration = this.replicaState.Configuration.Values.ToArray();
             return new HandShakeResponse(Protocol.StateMachineReplication, this.replicaState.ViewNumber, viewConfiguration);
+        }
+
+        public IResponse VisitGetAndLock(GetAndLockRequest getAndLockRequest) {
+            throw new NotImplementedException();
+        }
+
+        public IResponse VisitUnlockRequest(UnlockRequest unlockRequest) {
+            throw new NotImplementedException();
         }
 
         private int RunProcessRequestProtocol(ClientRequest clientRequest) {

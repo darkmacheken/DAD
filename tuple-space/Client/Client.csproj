@@ -65,6 +65,7 @@
     <Compile Include="Visitor\IBasicVisitor.cs" />
     <Compile Include="Exceptions\IncorrectCommandException.cs" />
     <Compile Include="Exceptions\BlockEndMissingException.cs" />
+    <Compile Include="Visitor\XLExecute.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
