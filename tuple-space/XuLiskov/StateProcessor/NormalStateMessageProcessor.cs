@@ -50,7 +50,7 @@ namespace XuLiskov.StateProcessor {
                 return this.replicaState.ClientTable[takeRequest.ClientId].Item2;
             } else {
                 Log.Debug($"Requesting Take({takeRequest.Tuple}) to Tuple Space.");
-                TupleSpace.Tuple takeTuple = this.replicaState.TupleSpace.UnlockAndTake(
+                this.replicaState.TupleSpace.UnlockAndTake(
                     takeRequest.ClientId, 
                     takeRequest.RequestNumber, 
                     takeRequest.Tuple);
@@ -60,7 +60,7 @@ namespace XuLiskov.StateProcessor {
                 ClientResponse clientResponse = new ClientResponse(
                     takeRequest.RequestNumber, 
                     viewNumber, 
-                    takeRequest.ToString());
+                    takeRequest.Tuple);
                 // update client table
                 lock (this.replicaState) {
                     this.replicaState.ClientTable[takeRequest.ClientId] =
