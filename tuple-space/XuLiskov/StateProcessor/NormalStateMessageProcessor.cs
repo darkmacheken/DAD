@@ -82,7 +82,11 @@ namespace XuLiskov.StateProcessor {
 
                 int viewNumber = this.replicaState.ViewNumber;
 
-                ClientResponse clientResponse = new ClientResponse(readRequest.RequestNumber, viewNumber, readTuple.ToString());
+                string tuple = "null";
+                if (readRequest != null) {
+                    tuple = readTuple.ToString();
+                }
+                ClientResponse clientResponse = new ClientResponse(readRequest.RequestNumber, viewNumber, tuple);
                 // update client table
                 lock (this.replicaState) {
                     this.replicaState.ClientTable[readRequest.ClientId] =
