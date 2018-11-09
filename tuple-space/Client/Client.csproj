@@ -66,6 +66,7 @@
     <Compile Include="Exceptions\IncorrectCommandException.cs" />
     <Compile Include="Exceptions\BlockEndMissingException.cs" />
     <Compile Include="Visitor\XLExecute.cs" />
+    <Compile Include="ListUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
