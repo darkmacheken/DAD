@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28010.2048
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{D667A288-97A8-447C-8558-ECAE7FF8B3EE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TupleSpace", "ClassLibrary1\TupleSpace.csproj", "{F3FB05ED-40A7-4C96-B94B-B926893CFF7C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TupleSpace", "TupleSpace\TupleSpace.csproj", "{F3FB05ED-40A7-4C96-B94B-B926893CFF7C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,42 +33,5 @@ Global
 		$0.DotNetNamingPolicy = $1
 		$1.DirectoryNamespaceAssociation = PrefixedHierarchical
 		$0.TextStylePolicy = $13
-		$2.inheritsSet = null
-		$2.scope = text/x-csharp
-		$0.CSharpFormattingPolicy = $3
-		$3.NewLinesForBracesInTypes = False
-		$3.NewLinesForBracesInMethods = False
-		$3.NewLinesForBracesInProperties = False
-		$3.NewLinesForBracesInAccessors = False
-		$3.NewLinesForBracesInAnonymousMethods = False
-		$3.NewLinesForBracesInControlBlocks = False
-		$3.NewLinesForBracesInAnonymousTypes = False
-		$3.NewLinesForBracesInObjectCollectionArrayInitializers = False
-		$3.NewLinesForBracesInLambdaExpressionBody = False
-		$3.NewLineForMembersInAnonymousTypes = False
-		$3.scope = text/x-csharp
-		$4.FileWidth = 80
-		$4.TabsToSpaces = True
-		$4.EolMarker = Windows
-		$4.scope = text/plain
-		$5.inheritsSet = null
-		$5.scope = application/config+xml
-		$0.XmlFormattingPolicy = $12
-		$6.inheritsSet = null
-		$6.scope = application/config+xml
-		$7.inheritsSet = null
-		$7.scope = application/xml
-		$8.scope = application/xml
-		$9.inheritsSet = null
-		$9.scope = application/x-csproject
-		$10.inheritsSet = null
-		$10.scope = application/x-csproject
-		$11.inheritsSet = null
-		$11.scope = application/x-msbuild
-		$12.inheritsSet = null
-		$12.scope = application/x-msbuild
-		$13.inheritsSet = null
-		$13.scope = application/x-sln
-		$0.StandardHeader = $14
 	EndGlobalSection
 EndGlobal

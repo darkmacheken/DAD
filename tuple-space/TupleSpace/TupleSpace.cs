@@ -1,35 +1,35 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using TupleSpace.Exceptions;
 
 namespace TupleSpace {
 
-    public class TupleSpace
-    {
+    public class TupleSpace {
         public List<Tuple> Tuples { get; set; }
-        public Dictionary<Tuple<string,int>, List<Tuple>> LockedTuples {get; set; }
+        public ConcurrentDictionary<Tuple<string,int>, List<Tuple>> LockedTuples {get; set; }
 
         public TupleSpace() {
-            Tuples = new List<Tuple>();
-            LockedTuples = new Dictionary<Tuple<string, int>, List<Tuple>>();
+            this.Tuples = new List<Tuple>();
+            this.LockedTuples = new ConcurrentDictionary<System.Tuple<string, int>, List<Tuple>>();
         }
 
         public TupleSpace(List<Tuple> tuples) {
-            Tuples = new List<Tuple>(tuples);
-            LockedTuples = new Dictionary<Tuple<string, int>, List<Tuple>>();
+            this.Tuples = new List<Tuple>(tuples);
+            this.LockedTuples = new ConcurrentDictionary<System.Tuple<string, int>, List<Tuple>>();
         }
 
-        public void Add(string tuplestring) {
-            Tuple tuple = new Tuple(tuplestring);
+        public void Add(string tupleString) {
+            Tuple tuple = new Tuple(tupleString);
             this.Tuples.Add(tuple);
             Console.WriteLine("Added Tuple: " + tuple);
         }
 
-        public Tuple Read(string tuplestring) {
-            Tuple tuple = new Tuple(tuplestring);
+        public Tuple Read(string tupleString) {
+            Tuple tuple = new Tuple(tupleString);
             Console.WriteLine("\nRead Tuple: " + tuple);
-            List<Tuple> matches = SearchTuples(tuple);
+            List<Tuple> matches = this.SearchTuples(tuple);
             Console.WriteLine("Matches: -------------------------- ");
             foreach (Tuple match in matches) {
                 Console.WriteLine(match);
@@ -38,10 +38,10 @@ namespace TupleSpace {
             return matches[0];
         }
 
-        public Tuple Take(string tuplestring) {
-            Tuple tuple = new Tuple(tuplestring);
+        public Tuple Take(string tupleString) {
+            Tuple tuple = new Tuple(tupleString);
             Console.WriteLine("\nTake Tuple: " + tuple);
-            List<Tuple> matches = SearchTuples(tuple);
+            List<Tuple> matches = this.SearchTuples(tuple);
             Console.WriteLine("Matches: -------------------------- ");
             foreach (Tuple match in matches) {
                 Console.WriteLine(match);
@@ -52,15 +52,15 @@ namespace TupleSpace {
             return removed;
         }
 
-        public List<Tuple> GetAndLock(string clientid, int requestnumber, string tuplestring) {
-            Tuple search_tuple = new Tuple(tuplestring);
-            List<Tuple> locked_tuples = new List<Tuple>();
+        public List<Tuple> GetAndLock(string clientId, int requestNumber, string tupleString) {
+            Tuple searchTuple = new Tuple(tupleString);
+            List<Tuple> lockedTuples = new List<Tuple>();
             bool refuse = false;
 
-            /* only one thread can aquire locks at each time */
+            /* only one thread can acquire locks at each time */
             lock (this.Tuples) {
                 try {
-                    locked_tuples = SearchAndLockTuples(search_tuple);
+                    lockedTuples = this.SearchAndLockTuples(searchTuple);
                 } catch(Exception e) {
                     refuse |= e is UnableToLockException;
                 }
@@ -68,58 +68,62 @@ namespace TupleSpace {
 
             /* unlock previous locked tuples if refused locks */
             if(refuse) {
-                foreach(Tuple tuple in locked_tuples) {
-                    Monitor.Exit(tuple);
+                foreach(Tuple tuple in lockedTuples) {
+                    tuple.Locked = false;
                 }
-                return null;
             }
-            else {
-                this.LockedTuples.Add(new Tuple<string, int>(clientid, requestnumber),locked_tuples);
+
+            else if (!this.LockedTuples.TryAdd(new System.Tuple<string, int>(clientId, requestNumber), lockedTuples)){
+                throw new RequestAlreadyHasLocks();
             }
-            return locked_tuples;
+            return lockedTuples;
         }
 
-        public void Unlock(string clientid, int requestnumber) {
-            List<Tuple> locked_tuples = GetTuplesByClientRequest(clientid, requestnumber);
+        public void Unlock(string clientId, int requestNumber) {
+            List<Tuple> lockedTuples = this.GetLockedTuplesByClientRequest(clientId, requestNumber);
             /* unlock all matches */
-            foreach (Tuple tuple in locked_tuples) {
-                Monitor.Exit(tuple);
+            foreach (Tuple tuple in lockedTuples) {
+                tuple.Locked = false;
             }
-            this.LockedTuples.Remove(new Tuple<string, int>(clientid, requestnumber));
+            if(!this.LockedTuples.TryRemove(new System.Tuple<string, int>(clientId, requestNumber), 
+                                            out List<Tuple> tupleValues)) {
+                throw new RequestDontHaveLocks();
+            }
         }
 
-        public void UnlockAndTake(string clientid, int requestnumber, Tuple tupletoremove) {
-            List<Tuple> locked_tuples = GetTuplesByClientRequest(clientid, requestnumber);
-
+        public void UnlockAndTake(string clientId, int requestNumber, Tuple tupletoremove) {
             /* unlock and take are "atomic" */
             lock (this.Tuples) {
-                Unlock(clientid, requestnumber);
+                this.Unlock(clientId, requestNumber);
                 this.Tuples.Remove(tupletoremove);
             }
         }
 
-        private List<Tuple> GetTuplesByClientRequest(string clientid, int requestnumber) {
-            return this.LockedTuples[new Tuple<string, int>(clientid, requestnumber)];
+        private List<Tuple> GetLockedTuplesByClientRequest(string clientId, int requestNumber) {
+            return this.LockedTuples[new System.Tuple<string, int>(clientId, requestNumber)];
         }
 
-        private List<Tuple> SearchAndLockTuples(Tuple search_tuple) {
+        private List<Tuple> SearchAndLockTuples(Tuple searchTuple) {
             List<Tuple> result = new List<Tuple>();
             foreach (Tuple tuple in this.Tuples) {
-                if (tuple.Match(search_tuple)) {
-                    if (!Monitor.TryEnter(tuple)) {
+                if (!tuple.Match(searchTuple)) {
+                    continue;
+                }
+                lock(tuple) {
+                    if (tuple.Locked) {
                         throw new UnableToLockException();
                     }
-                    result.Add(tuple);
+                    tuple.Locked = true;
                 }
+                result.Add(tuple);
             }
             return result;
         }
 
-        private List<Tuple> SearchTuples(Tuple search_tuple)
-        {
+        private List<Tuple> SearchTuples(Tuple searchTuple) {
             List<Tuple> result = new List<Tuple>();
             foreach (Tuple tuple in this.Tuples) {
-                if (tuple.Match(search_tuple)) {
+                if (tuple.Match(searchTuple)) {
                     result.Add(tuple);
                 }
             }

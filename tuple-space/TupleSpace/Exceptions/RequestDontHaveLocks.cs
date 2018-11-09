@@ -2,6 +2,6 @@
 
 namespace TupleSpace.Exceptions {
 
-    public class UnableToLockException : Exception {
+    public class RequestDontHaveLocks : Exception {
     }
 }

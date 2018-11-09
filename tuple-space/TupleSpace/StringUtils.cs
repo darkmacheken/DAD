@@ -2,11 +2,11 @@
 
 namespace TupleSpace {
 
-    public static class Utils {
+    public static class StringUtils {
 
         public static bool MatchString(string s,string search) {
-            string parsed_search = "^" + search.Replace("*", ".*") + "$";
-            Regex regex = new Regex(@parsed_search);
+            string parsedSearch = "^" + search.Replace("*", ".*") + "$";
+            Regex regex = new Regex(@parsedSearch);
             Match match = regex.Match(s);
 
             return match.Success;
