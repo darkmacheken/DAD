@@ -25,6 +25,7 @@ namespace TupleSpace {
                 this.Tuples.Add(tuple);
             }
             Console.WriteLine("Added Tuple: " + tuple);
+            this.PrintTupleSpace();
         }
 
         /// <summary>
@@ -39,9 +40,11 @@ namespace TupleSpace {
             }
             if (matches.Count > 0) {
                 Console.WriteLine("\nRead Tuple: " + matches[0]);
+                this.PrintTupleSpace();
                 return matches[0];
             }
             Console.WriteLine("\nRead: No Tuple was found.");
+            this.PrintTupleSpace();
             return null;
         }
 
@@ -59,10 +62,12 @@ namespace TupleSpace {
                     Tuple removed = matches[0];
                     this.Tuples.Remove(removed);
                     Console.WriteLine("\nTake Tuple: " + removed);
+                    this.PrintTupleSpace();
                     return removed;
                 }
             }
             Console.WriteLine("\nTake: No Tuple was found.");
+            this.PrintTupleSpace();
             return null;
         }
 
@@ -152,6 +157,13 @@ namespace TupleSpace {
                 }
             }
             return result;
+        }
+
+        private void PrintTupleSpace() {
+            Console.WriteLine("Tuple Space:");
+            foreach (Tuple tuple in this.Tuples) {
+                Console.WriteLine($"\t{tuple}");
+            }
         }
     }
 }
