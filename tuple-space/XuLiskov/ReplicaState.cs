@@ -20,6 +20,9 @@ namespace StateMachineReplication {
 
         public IMessageVisitor State { get; set; }
 
+        // Tuple Space
+        public TupleSpace.TupleSpace TupleSpace { get; }
+
         // Attribute Atomic operations
         private int viewNumber;
         public int ViewNumber { get { return this.viewNumber; } }
