@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using TupleSpace.Exceptions;
 
 namespace TupleSpace {
@@ -25,6 +26,7 @@ namespace TupleSpace {
                 this.Tuples.Add(tuple);
             }
             Console.WriteLine("Added Tuple: " + tuple);
+            this.PrintTupleSpace();
         }
 
         /// <summary>
@@ -39,9 +41,11 @@ namespace TupleSpace {
             }
             if (matches.Count > 0) {
                 Console.WriteLine("\nRead Tuple: " + matches[0]);
+                this.PrintTupleSpace();
                 return matches[0];
             }
             Console.WriteLine("\nRead: No Tuple was found.");
+            this.PrintTupleSpace();
             return null;
         }
 
@@ -59,14 +63,17 @@ namespace TupleSpace {
                     Tuple removed = matches[0];
                     this.Tuples.Remove(removed);
                     Console.WriteLine("\nTake Tuple: " + removed);
+
+                    this.PrintTupleSpace();
                     return removed;
                 }
             }
             Console.WriteLine("\nTake: No Tuple was found.");
+            this.PrintTupleSpace();
             return null;
         }
 
-        public List<Tuple> GetAndLock(string clientId, int requestNumber, string tupleString) {
+        public List<string> GetAndLock(string clientId, int requestNumber, string tupleString) {
             Tuple searchTuple = new Tuple(tupleString);
             List<Tuple> lockedTuples = new List<Tuple>();
             bool refuse = false;
@@ -90,7 +97,8 @@ namespace TupleSpace {
             else if (!this.LockedTuples.TryAdd(new System.Tuple<string, int>(clientId, requestNumber), lockedTuples)){
                 throw new RequestAlreadyHasLocks();
             }
-            return lockedTuples;
+            List<string> lockedTuplesString = lockedTuples.Select(s => s.ToString()).ToList();
+            return lockedTuplesString;
         }
 
         public void Unlock(string clientId, int requestNumber) {
@@ -152,6 +160,13 @@ namespace TupleSpace {
                 }
             }
             return result;
+        }
+
+        private void PrintTupleSpace() {
+            Console.WriteLine("Tuple Space:");
+            foreach (Tuple tuple in this.Tuples) {
+                Console.WriteLine($"\t{tuple}");
+            }
         }
     }
 }
