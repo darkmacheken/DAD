@@ -6,7 +6,7 @@
   </appender>
 
   <root>
-    <level value="ALL" />
+    <level value="INFO" />
     <appender-ref ref="Console" />
   </root>
 </log4net>
