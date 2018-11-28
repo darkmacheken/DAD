@@ -7,7 +7,7 @@ using MessageService.Serializable;
 using MessageService.Visitor;
 
 namespace StateMachineReplication.StateProcessor {
-    internal enum ProcessRequest { DROP, LAST_EXECUTION,}
+    internal enum ProcessRequest { DROP, LAST_EXECUTION}
 
     public class NormalStateMessageProcessor : IMessageSMRVisitor {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(NormalStateMessageProcessor));

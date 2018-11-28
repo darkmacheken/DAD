@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
-using MessageService.Serializable;
+using MessageService;
 
 namespace StateMachineReplication {
     public class OrderedQueue {

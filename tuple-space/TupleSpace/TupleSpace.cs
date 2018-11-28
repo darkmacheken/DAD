@@ -10,16 +10,16 @@ namespace TupleSpace {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(TupleSpace));
 
         public List<Tuple> Tuples { get; set; }
-        public ConcurrentDictionary<System.Tuple<string,int>, List<Tuple>> LockedTuples {get; set; }
+        public ConcurrentDictionary<string, List<Tuple>> LockedTuples {get; set; }
 
         public TupleSpace() {
             this.Tuples = new List<Tuple>();
-            this.LockedTuples = new ConcurrentDictionary<System.Tuple<string, int>, List<Tuple>>();
+            this.LockedTuples = new ConcurrentDictionary<string, List<Tuple>>();
         }
 
         public TupleSpace(List<Tuple> tuples) {
             this.Tuples = new List<Tuple>(tuples);
-            this.LockedTuples = new ConcurrentDictionary<System.Tuple<string, int>, List<Tuple>>();
+            this.LockedTuples = new ConcurrentDictionary<string, List<Tuple>>();
         }
 
         public void Add(string tupleString) {
@@ -27,7 +27,7 @@ namespace TupleSpace {
             lock(this.Tuples) {
                 this.Tuples.Add(tuple);
             }
-            Log.Info("Added Tuple: " + tuple);
+            Log.Info($"Added Tuple: {tuple}");
         }
 
         /// <summary>
@@ -41,10 +41,10 @@ namespace TupleSpace {
                 matches = this.SearchTuples(tuple);
             }
             if (matches.Count > 0) {
-                Log.Info("\nRead Tuple: " + matches[0]);
+                Log.Info($"Read Tuple: {matches[0]}");
                 return matches[0];
             }
-            Log.Warn("\nRead: Tuple was not found.");
+            Log.Warn($"Read: Tuple {tupleString} was not found.");
             return null;
         }
 
@@ -61,16 +61,16 @@ namespace TupleSpace {
                 if (matches.Count > 0) {
                     Tuple removed = matches[0];
                     this.Tuples.Remove(removed);
-                    Log.Info("\nTake Tuple: " + removed);
+                    Log.Info($"Take Tuple: {removed}");
 
                     return removed;
                 }
             }
-            Log.Warn("\nTake: Tuple was not found.");
+            Log.Warn($"Take: Tuple {tupleString} was not found.");
             return null;
         }
 
-        public List<string> GetAndLock(string clientId, int requestNumber, string tupleString) {
+        public List<string> GetAndLock(string clientId, string tupleString) {
             Tuple searchTuple = new Tuple(tupleString);
             List<Tuple> lockedTuples = new List<Tuple>();
             bool refuse = false;
@@ -86,35 +86,35 @@ namespace TupleSpace {
 
             /* unlock previous locked tuples if refused locks */
             if(refuse) {
+                Log.Debug($"Request from client {clientId} got lock refuse for tuple {tupleString}. Starting process of unlocking.");
                 foreach(Tuple tuple in lockedTuples) {
                     tuple.Locked = false;
                 }
             }
 
-            else if (!this.LockedTuples.TryAdd(new System.Tuple<string, int>(clientId, requestNumber), lockedTuples)){
+            else if (!this.LockedTuples.TryAdd(clientId, lockedTuples)){
                 throw new RequestAlreadyHasLocks();
             }
             List<string> lockedTuplesString = lockedTuples.Select(s => s.ToString()).ToList();
             return lockedTuplesString;
         }
 
-        public void Unlock(string clientId, int requestNumber) {
-            List<Tuple> lockedTuples = this.GetLockedTuplesByClientRequest(clientId, requestNumber);
+        public void Unlock(string clientId) {
+            List<Tuple> lockedTuples = this.GetLockedTuplesByClient(clientId);
             /* unlock all matches */  
             lock(this.Tuples) {
                 foreach (Tuple tuple in lockedTuples) {
                     tuple.Locked = false;
                 }
             }
-            if(!this.LockedTuples.TryRemove(new System.Tuple<string, int>(clientId, requestNumber), 
-                                            out List<Tuple> tupleValues)) {
+            if(!this.LockedTuples.TryRemove(clientId, out List<Tuple> tupleValues)) {
                 throw new RequestDontHaveLocks();
             }
         }
 
-        public void UnlockAndTake(string clientId, int requestNumber, string tupleString) {
+        public void UnlockAndTake(string clientId, string tupleString) {
             /* unlock and take are "atomic" */
-            List<Tuple> lockedTuples = this.GetLockedTuplesByClientRequest(clientId, requestNumber);
+            List<Tuple> lockedTuples = this.GetLockedTuplesByClient(clientId);
             lock (this.Tuples) {
                 /* unlock all matches */
                 foreach (Tuple tuple in lockedTuples)  {
@@ -123,14 +123,13 @@ namespace TupleSpace {
                 Tuple tupleToRemove = new Tuple(tupleString);
                 this.Tuples.Remove(tupleToRemove);
             }
-            if (!this.LockedTuples.TryRemove(new System.Tuple<string, int>(clientId, requestNumber),
-                                            out List<Tuple> tupleValues)) {
+            if (!this.LockedTuples.TryRemove(clientId, out List<Tuple> tupleValues)) {
                 throw new RequestDontHaveLocks();
             }
         }
 
-        private List<Tuple> GetLockedTuplesByClientRequest(string clientId, int requestNumber) {
-            return this.LockedTuples[new System.Tuple<string, int>(clientId, requestNumber)];
+        private List<Tuple> GetLockedTuplesByClient(string clientId) {
+            return this.LockedTuples[clientId];
         }
 
         private List<Tuple> SearchAndLockTuples(Tuple searchTuple) {

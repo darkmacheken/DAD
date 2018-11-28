@@ -25,7 +25,7 @@ namespace StateMachineReplication {
 
         // Attribute Atomic operations
         private int viewNumber;
-        public int ViewNumber { get { return this.viewNumber; } }
+        public int ViewNumber => this.viewNumber;
         public int IncrementViewNumber() { return Interlocked.Increment(ref this.viewNumber); }
 
         private int opNumber;
@@ -39,8 +39,8 @@ namespace StateMachineReplication {
         // Tuple Space
         public TupleSpace.TupleSpace TupleSpace { get; }
 
-        // Request Executor
-        private RequestsExecutor requestsExecutor;
+        // Request SMRExecutor
+        private readonly RequestsExecutor requestsExecutor;
 
         // Handlers
         public ConcurrentDictionary<int, AutoResetEvent> HandlersCommits { get; }

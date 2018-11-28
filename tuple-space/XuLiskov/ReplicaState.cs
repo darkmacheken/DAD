@@ -8,7 +8,7 @@ using MessageService.Visitor;
 
 using XuLiskov.StateProcessor;
 
-namespace StateMachineReplication {
+namespace XuLiskov {
     public class ReplicaState {
         public MessageServiceClient MessageServiceClient { get; }
         public string ServerId { get; }
@@ -25,8 +25,11 @@ namespace StateMachineReplication {
 
         // Attribute Atomic operations
         private int viewNumber;
-        public int ViewNumber { get { return this.viewNumber; } }
+        public int ViewNumber => this.viewNumber;
         public int IncrementViewNumber() { return Interlocked.Increment(ref this.viewNumber); }
+
+        // Request XL Executor
+        public RequestsExecutor RequestsExecutor { get; }
 
         public ReplicaState(MessageServiceClient messageServiceClient, Uri url, string serverId) {
             this.MessageServiceClient = messageServiceClient;
@@ -42,6 +45,8 @@ namespace StateMachineReplication {
             this.viewNumber = 0;
 
             this.TupleSpace = new TupleSpace.TupleSpace();
+
+            this.RequestsExecutor = new RequestsExecutor(this);
         }
     }
 }

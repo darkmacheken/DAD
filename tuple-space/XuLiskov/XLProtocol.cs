@@ -4,7 +4,7 @@ using log4net;
 
 using MessageService;
 
-namespace StateMachineReplication {
+namespace XuLiskov {
    
     public class XLProtocol : IProtocol {
         private static readonly ILog Log = LogManager.GetLogger(typeof(XLProtocol));

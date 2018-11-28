@@ -1,19 +1,19 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-
+using System.Threading.Tasks;
 using MessageService;
-
 using MessageService.Serializable;
 using MessageService.Visitor;
-using StateMachineReplication;
+using XuLiskov;
 
 namespace XuLiskov.StateProcessor {
+    internal enum ProcessRequest { DROP, LAST_EXECUTION }
+
     public class NormalStateMessageProcessor : IMessageXLVisitor {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(NormalStateMessageProcessor));
 
-        private ReplicaState replicaState;
-        private MessageServiceClient messageServiceClient;
+        private readonly ReplicaState replicaState;
+        private readonly MessageServiceClient messageServiceClient;
 
         public NormalStateMessageProcessor(ReplicaState replicaState, MessageServiceClient messageServiceClient) {
             this.replicaState = replicaState;
@@ -21,129 +21,23 @@ namespace XuLiskov.StateProcessor {
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
-            int runProcessRequestProtocol = this.RunProcessRequestProtocol(addRequest);
-            if (runProcessRequestProtocol < 0) { // Drop
-                return null;
-            } else if (runProcessRequestProtocol == 0) { // Return last execution's result
-                return this.replicaState.ClientTable[addRequest.ClientId].Item2;
-            } else {
-                Log.Debug($"Requesting Add({addRequest.Tuple}) to Tuple Space.");
-                this.replicaState.TupleSpace.Add(addRequest.Tuple);
-
-                int viewNumber = this.replicaState.ViewNumber;
-
-                ClientResponse clientResponse = new ClientResponse(addRequest.RequestNumber, viewNumber, string.Empty);
-                // update client table
-                lock (this.replicaState) {
-                    this.replicaState.ClientTable[addRequest.ClientId] =
-                        new Tuple<int, ClientResponse>(addRequest.RequestNumber, clientResponse);
-                }
-
-                return clientResponse;
-            }
+            return ExecuteRequest(addRequest, new AddExecutor(addRequest));
         }
 
         public IResponse VisitTakeRequest(TakeRequest takeRequest) {
-            int runProcessRequestProtocol = this.RunProcessRequestProtocol(takeRequest);
-            if (runProcessRequestProtocol < 0) { // Drop
-                return null;
-            } else if (runProcessRequestProtocol == 0) { // Return last execution's result
-                return this.replicaState.ClientTable[takeRequest.ClientId].Item2;
-            } else {
-                Log.Debug($"Requesting Take({takeRequest.Tuple}) to Tuple Space.");
-                this.replicaState.TupleSpace.UnlockAndTake(
-                    takeRequest.ClientId, 
-                    takeRequest.RequestNumberLock, 
-                    takeRequest.Tuple);
-
-                int viewNumber = this.replicaState.ViewNumber;
-
-                ClientResponse clientResponse = new ClientResponse(
-                    takeRequest.RequestNumber, 
-                    viewNumber, 
-                    takeRequest.Tuple);
-                // update client table
-                lock (this.replicaState) {
-                    this.replicaState.ClientTable[takeRequest.ClientId] =
-                        new Tuple<int, ClientResponse>(takeRequest.RequestNumber, clientResponse);
-                }
-                return clientResponse;
-            }
+            return ExecuteRequest(takeRequest, new TakeExecutor(takeRequest));
         }
 
         public IResponse VisitReadRequest(ReadRequest readRequest) {
-            int runProcessRequestProtocol = this.RunProcessRequestProtocol(readRequest);
-            if (runProcessRequestProtocol < 0) { // Drop
-                return null;
-            } else if (runProcessRequestProtocol == 0) { // Return last execution's result
-                return this.replicaState.ClientTable[readRequest.ClientId].Item2;
-            } else {
-                Log.Debug($"Requesting Read({readRequest.Tuple}) to Tuple Space.");
-                TupleSpace.Tuple readTuple = this.replicaState.TupleSpace.Read(readRequest.Tuple);
-
-                int viewNumber = this.replicaState.ViewNumber;
-
-                string tuple = "null";
-                if (readRequest != null) {
-                    tuple = readTuple.ToString();
-                }
-                ClientResponse clientResponse = new ClientResponse(readRequest.RequestNumber, viewNumber, tuple);
-                // update client table
-                lock (this.replicaState) {
-                    this.replicaState.ClientTable[readRequest.ClientId] =
-                        new Tuple<int, ClientResponse>(readRequest.RequestNumber, clientResponse);
-                }
-                return clientResponse;
-            }
+            return ExecuteRequest(readRequest, new ReadExecutor(readRequest));
         }
 
         public IResponse VisitGetAndLock(GetAndLockRequest getAndLockRequest) {
-            int runProcessRequestProtocol = this.RunProcessRequestProtocol(getAndLockRequest);
-            if (runProcessRequestProtocol < 0) { // Drop
-                return null;
-            } else if (runProcessRequestProtocol == 0) { // Return last execution's result
-                return this.replicaState.ClientTable[getAndLockRequest.ClientId].Item2;
-            } else {
-                Log.Debug($"Requesting GetAndLock({getAndLockRequest.Tuple}) to Tuple Space.");
-                List<string> tuples = this.replicaState.TupleSpace.GetAndLock(
-                    getAndLockRequest.ClientId,
-                    getAndLockRequest.RequestNumber,
-                    getAndLockRequest.Tuple);
-
-                int viewNumber = this.replicaState.ViewNumber;
-
-                GetAndLockResponse clientResponse = new 
-                    GetAndLockResponse(getAndLockRequest.RequestNumber, viewNumber, tuples);
-                // update client table
-                lock (this.replicaState) {
-                    this.replicaState.ClientTable[getAndLockRequest.ClientId] =
-                        new Tuple<int, ClientResponse>(getAndLockRequest.RequestNumber, clientResponse);
-                }
-                return clientResponse;
-            }
+            return ExecuteRequest(getAndLockRequest, new GetAndLockExecutor(getAndLockRequest));
         }
 
         public IResponse VisitUnlockRequest(UnlockRequest unlockRequest) {
-            int runProcessRequestProtocol = this.RunProcessRequestProtocol(unlockRequest);
-            if (runProcessRequestProtocol < 0) { // Drop
-                return null;
-            } else if (runProcessRequestProtocol == 0) { // Return last execution's result
-                return this.replicaState.ClientTable[unlockRequest.ClientId].Item2;
-            } else {
-                Log.Debug($"Requesting Unlock({unlockRequest.Tuple}) to Tuple Space.");
-                this.replicaState.TupleSpace.Unlock(unlockRequest.ClientId, unlockRequest.RequestNumberLock);
-
-                int viewNumber = this.replicaState.ViewNumber;
-
-                ClientResponse clientResponse = new 
-                    ClientResponse(unlockRequest.RequestNumber, viewNumber, string.Empty);
-                // update client table
-                lock (this.replicaState) {
-                    this.replicaState.ClientTable[unlockRequest.ClientId] =
-                        new Tuple<int, ClientResponse>(unlockRequest.RequestNumber, clientResponse);
-                }
-                return clientResponse;
-            }
+            return ExecuteRequest(unlockRequest, new UnlockExecutor(unlockRequest));
         }
 
         public IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest) {
@@ -151,24 +45,53 @@ namespace XuLiskov.StateProcessor {
             return new HandShakeResponse(Protocol.XuLiskov, this.replicaState.ViewNumber, viewConfiguration);
         }
 
-        private int RunProcessRequestProtocol(ClientRequest clientRequest) {
+        private IResponse ExecuteRequest(ClientRequest clientRequest, Executor clientExecutor) {
+            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(clientRequest, clientExecutor);
+            if (runProcessRequestProtocol == ProcessRequest.DROP) {
+                return null;
+            }
+
+            if (runProcessRequestProtocol == ProcessRequest.LAST_EXECUTION) {
+                return this.replicaState.ClientTable[clientRequest.ClientId].Item2;
+            }
+
+            return null;
+        }
+
+        private ProcessRequest RunProcessRequestProtocol(ClientRequest clientRequest, Executor clientExecutor) {
             if (this.replicaState.ClientTable.TryGetValue(clientRequest.ClientId, out Tuple<int, ClientResponse> clientResponse)) {
                 // Key is in the dictionary
-                if (clientResponse.Item1 < 0 ||
+                if (clientResponse == null || clientResponse.Item1 < 0 ||
                     clientRequest.RequestNumber < clientResponse.Item1) {
                     // Duplicate Request: Long forgotten => drop
-                    return -1;
-                } else if (clientRequest.RequestNumber == clientResponse.Item1) {
-                    // Duplicate Request: Last Execution => return stored value in the client table
-                    return 0;
+                    return ProcessRequest.DROP;
+                }
+
+                if (clientRequest.RequestNumber == clientResponse.Item1) {
+                    // Duplicate Request
+                    // If it is in execution.. wait.
+                    if (clientResponse.Item2.GetType() == typeof(Executor)) {
+                        Executor executor = (Executor)clientResponse.Item2;
+                        executor.Executed.WaitOne();
+                    }
+                    return ProcessRequest.LAST_EXECUTION;
                 }
             } else {
                 // Not in dictionary... Add with value as null
                 this.replicaState.ClientTable.Add(clientRequest.ClientId, new Tuple<int, ClientResponse>(-1, null));
             }
 
-            // We can return now, it's our turn to execute.
-            return 1;
+            // Update Client Table With status execution
+            this.replicaState.ClientTable[clientRequest.ClientId] =
+                new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientExecutor);
+
+            // Execute in a new thread
+            Task.Factory.StartNew(() => clientExecutor.Execute(this.replicaState.RequestsExecutor));
+
+            // wait execution
+            clientExecutor.Executed.WaitOne();
+
+            return ProcessRequest.LAST_EXECUTION;
         }
     }
 }
