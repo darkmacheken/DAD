@@ -18,7 +18,7 @@ namespace StateMachineReplication {
 
         public Dictionary<string, Tuple<int, ClientResponse>> ClientTable { get; }
 
-        public IMessageVisitor State { get; set; }
+        public IMessageXLVisitor State { get; set; }
 
         // Tuple Space
         public TupleSpace.TupleSpace TupleSpace { get; }

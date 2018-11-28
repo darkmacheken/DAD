@@ -7,6 +7,8 @@ using TupleSpace.Exceptions;
 namespace TupleSpace {
 
     public class TupleSpace {
+        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(TupleSpace));
+
         public List<Tuple> Tuples { get; set; }
         public ConcurrentDictionary<System.Tuple<string,int>, List<Tuple>> LockedTuples {get; set; }
 
@@ -25,13 +27,12 @@ namespace TupleSpace {
             lock(this.Tuples) {
                 this.Tuples.Add(tuple);
             }
-            Console.WriteLine("Added Tuple: " + tuple);
-            this.PrintTupleSpace();
+            Log.Info("Added Tuple: " + tuple);
         }
 
         /// <summary>
         /// This method returns the first tuple found that matches the tupleString.
-        /// If no match was found, it returns null.
+        /// If a match isn't found, it returns null.
         /// </summary>
         public Tuple Read(string tupleString) {
             Tuple tuple = new Tuple(tupleString);
@@ -40,18 +41,16 @@ namespace TupleSpace {
                 matches = this.SearchTuples(tuple);
             }
             if (matches.Count > 0) {
-                Console.WriteLine("\nRead Tuple: " + matches[0]);
-                this.PrintTupleSpace();
+                Log.Info("\nRead Tuple: " + matches[0]);
                 return matches[0];
             }
-            Console.WriteLine("\nRead: No Tuple was found.");
-            this.PrintTupleSpace();
+            Log.Warn("\nRead: Tuple was not found.");
             return null;
         }
 
         /// <summary>
         /// This method removes and returns the first tuple found that matches the tupleString.
-        /// If no match was found, it returns null.
+        /// If a match isn't found, it returns null.
         /// </summary>
         /// <param name="tupleString">Tuple string.</param>
         public Tuple Take(string tupleString) {
@@ -62,14 +61,12 @@ namespace TupleSpace {
                 if (matches.Count > 0) {
                     Tuple removed = matches[0];
                     this.Tuples.Remove(removed);
-                    Console.WriteLine("\nTake Tuple: " + removed);
+                    Log.Info("\nTake Tuple: " + removed);
 
-                    this.PrintTupleSpace();
                     return removed;
                 }
             }
-            Console.WriteLine("\nTake: No Tuple was found.");
-            this.PrintTupleSpace();
+            Log.Warn("\nTake: Tuple was not found.");
             return null;
         }
 
@@ -161,13 +158,6 @@ namespace TupleSpace {
                 }
             }
             return result;
-        }
-
-        private void PrintTupleSpace() {
-            Console.WriteLine("Tuple Space:");
-            foreach (Tuple tuple in this.Tuples) {
-                Console.WriteLine($"\t{tuple}");
-            }
         }
     }
 }

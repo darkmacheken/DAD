@@ -7,13 +7,17 @@ namespace MessageService.Visitor {
         IResponse VisitTakeRequest(TakeRequest takeRequest);
 
         IResponse VisitReadRequest(ReadRequest readRequest);
+      
+        IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest);
+    }
 
+    public interface IMessageSMRVisitor : IMessageVisitor {
         IResponse VisitPrepareMessage(PrepareMessage prepareMessage);
 
         IResponse VisitCommitMessage(CommitMessage commitMessage);
+    }
 
-        IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest);
-
+    public interface IMessageXLVisitor : IMessageVisitor {
         IResponse VisitGetAndLock(GetAndLockRequest getAndLockRequest);
 
         IResponse VisitUnlockRequest(UnlockRequest unlockRequest);

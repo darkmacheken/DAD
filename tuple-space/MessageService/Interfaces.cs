@@ -36,7 +36,9 @@ namespace MessageService {
     }
 
     public interface IMessage {
-        IResponse Accept(IMessageVisitor visitor);
+        IResponse Accept(IMessageSMRVisitor visitor);
+    
+        IResponse Accept(IMessageXLVisitor visitor);
     }
 
     public interface IResponse { }
