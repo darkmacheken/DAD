@@ -1,0 +1,6 @@
+wait 5000
+begin-repeat 100
+add <"b">
+take <"a">
+end-repeat
+

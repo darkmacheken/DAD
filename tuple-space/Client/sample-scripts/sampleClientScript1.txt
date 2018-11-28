@@ -1,0 +1,18 @@
+add <"a">
+wait 1000
+read <"a">
+wait 500
+read <"a*">
+wait 1000
+add <"a","b","c","d","e">
+take <"*","*","*","*","*">
+wait 1000
+add <DADTestA(1,"a"),DADTestB(1,"c",2),DADTestC(1,"b","d")>
+take <DADTestA,DADTestB,DADTestC>
+wait 1000
+begin-repeat 3
+add <"xx",DADTestB(10,"c",20)>
+wait 1000
+take <"x*",DADTestB>
+end-repeat
+

@@ -13,12 +13,20 @@ namespace MessageService.Serializable {
     public class HandShakeRequest : ClientRequest {
         public HandShakeRequest(string clientId) : base(clientId) { }
 
-        public override IResponse Accept(IMessageVisitor visitor) {
+        public IResponse Accept(IMessageVisitor visitor) {
             return visitor.VisitHandShakeRequest(this);
         }
 
         public override string ToString() {
             return $"Handshake {{ Client ID: {this.ClientId} }}";
+        }
+
+        public override IResponse Accept(IMessageSMRVisitor visitor) {
+            return visitor.VisitHandShakeRequest(this);
+        }
+
+        public override IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitHandShakeRequest(this);
         }
     }
 

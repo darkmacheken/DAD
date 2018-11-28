@@ -27,24 +27,30 @@ namespace MessageService.Serializable {
             this.Tuple = tuple;
             this.ViewNumber = viewNumber;
         }
-
-        public abstract IResponse Accept(IMessageVisitor visitor);
-
+        
         public override string ToString() {
             return $"{this.Tuple}";
         }
+
+        public abstract IResponse Accept(IMessageSMRVisitor visitor);
+
+        public abstract IResponse Accept(IMessageXLVisitor visitor);
     }
 
     [Serializable]
     public class ReadRequest : ClientRequest {
         public ReadRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
-        public override IResponse Accept(IMessageVisitor visitor) {
+        public override string ToString() {
+            return $"{{ read {base.ToString()}, {this.ClientId}, {this.RequestNumber} }}";
+        }
+
+        public override IResponse Accept(IMessageSMRVisitor visitor) {
             return visitor.VisitReadRequest(this);
         }
 
-        public override string ToString() {
-            return $"{{ read {base.ToString()}, {this.ClientId}, {this.RequestNumber} }}";
+        public override IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitReadRequest(this);
         }
     }
 
@@ -52,12 +58,16 @@ namespace MessageService.Serializable {
     public class AddRequest : ClientRequest {
         public AddRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
-        public override IResponse Accept(IMessageVisitor visitor) {
+        public override string ToString() {
+            return $"{{ add {base.ToString()}, {this.ClientId}, {this.RequestNumber} }}";
+        }
+
+        public override IResponse Accept(IMessageSMRVisitor visitor) {
             return visitor.VisitAddRequest(this);
         }
 
-        public override string ToString() {
-            return $"{{ add {base.ToString()}, {this.ClientId}, {this.RequestNumber} }}";
+        public override IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitAddRequest(this);
         }
     }
 
@@ -65,12 +75,16 @@ namespace MessageService.Serializable {
     public class TakeRequest : ClientRequest {
         public TakeRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
 
-        public override IResponse Accept(IMessageVisitor visitor) {
+        public override string ToString() {
+            return $"{{ take {base.ToString()}, {this.ClientId}, {this.RequestNumber} }}";
+        }
+
+        public override IResponse Accept(IMessageSMRVisitor visitor) {
             return visitor.VisitTakeRequest(this);
         }
 
-        public override string ToString() {
-            return $"{{ take {base.ToString()}, {this.ClientId}, {this.RequestNumber} }}";
+        public override IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitTakeRequest(this);
         }
     }
 
@@ -79,6 +93,8 @@ namespace MessageService.Serializable {
         public int RequestNumber { get; set; }
         public int ViewNumber { get; set; }
         public string Result { get; set; }
+
+        public ClientResponse() { }
 
         public ClientResponse(int requestNumber, int viewNumber) {
             this.RequestNumber = requestNumber;

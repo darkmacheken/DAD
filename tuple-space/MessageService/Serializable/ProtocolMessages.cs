@@ -22,8 +22,12 @@ namespace MessageService.Serializable {
             this.CommitNumber = commitNumber;
         }
 
-        public IResponse Accept(IMessageVisitor visitor) {
+        public IResponse Accept(IMessageSMRVisitor visitor) {
             return visitor.VisitPrepareMessage(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            throw new NotImplementedException();
         }
 
         public override string ToString() {
@@ -61,8 +65,12 @@ namespace MessageService.Serializable {
             this.CommitNumber = commitNumber;
         }
 
-        public IResponse Accept(IMessageVisitor visitor) {
+        public IResponse Accept(IMessageSMRVisitor visitor) {
             return visitor.VisitCommitMessage(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            throw new NotImplementedException();
         }
 
         public override string ToString() {
@@ -76,8 +84,13 @@ namespace MessageService.Serializable {
         public GetAndLockRequest(int viewNumber, string clientId, int requestNumber, string tuple) :
             base(viewNumber, clientId, requestNumber, tuple) { }
 
-        public override IResponse Accept(IMessageVisitor visitor) {
+        
+        public override IResponse Accept(IMessageXLVisitor visitor) {
             return visitor.VisitGetAndLock(this);
+        }
+
+        public override IResponse Accept(IMessageSMRVisitor visitor) {
+            throw new NotImplementedException();
         }
 
         public override string ToString() {
@@ -102,8 +115,12 @@ namespace MessageService.Serializable {
         public UnlockRequest(int viewNumber, string clientId, int requestNumber)
             : base(viewNumber, clientId, requestNumber, "") { }
 
-        public override IResponse Accept(IMessageVisitor visitor) {
+        public override IResponse Accept(IMessageXLVisitor visitor) {
             return visitor.VisitUnlockRequest(this);
+        }
+
+        public override IResponse Accept(IMessageSMRVisitor visitor) {
+            throw new NotImplementedException();
         }
 
         public override string ToString() {

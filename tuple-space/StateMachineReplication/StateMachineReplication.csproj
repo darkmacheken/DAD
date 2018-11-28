@@ -44,6 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="OrderedQueue.cs" />
+    <Compile Include="RequestsExecutor.cs" />
     <Compile Include="ReplicaState.cs" />
     <Compile Include="SMRProtocol.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

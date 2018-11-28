@@ -8,7 +8,7 @@ using MessageService.Visitor;
 using StateMachineReplication;
 
 namespace XuLiskov.StateProcessor {
-    public class NormalStateMessageProcessor : IMessageVisitor {
+    public class NormalStateMessageProcessor : IMessageXLVisitor {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(NormalStateMessageProcessor));
       
         private ReplicaState replicaState;
@@ -168,17 +168,6 @@ namespace XuLiskov.StateProcessor {
 
             // We can return now, it's our turn to execute.
             return 1;
-        }
-
-
-        // TODO: make a better design to not implement this. This belongs to SMR. It will be
-        // TODO: in the end of the file to not make confusion.
-        public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
-            throw new System.NotImplementedException();
-        }
-
-        public IResponse VisitCommitMessage(CommitMessage commitMessage) {
-            throw new System.NotImplementedException();
         }
     }
 }
