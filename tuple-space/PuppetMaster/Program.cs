@@ -28,11 +28,16 @@ namespace PuppetMaster {
                 } catch (Exception ex) {
                     if (ex is IncorrectCommandException) {
                         Console.WriteLine(ex.Message);
+                        if (args.Length == 1) {
+                            break;
+                        }
                     } else {
                         throw;
                     }
                 }
             }
+            Console.WriteLine("Press enter do exit...");
+            Console.ReadLine();
         }
     }
 }

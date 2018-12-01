@@ -18,7 +18,10 @@ namespace PuppetMaster.Visitor {
         }
 
         public void VisitCrash(Crash crash) {
-            Console.WriteLine($"Crash {crash.ProcessName}");
+            Task.Factory.StartNew(() => {
+                IPuppetMasterService server = this.GetServerService(crash.ProcessName);
+                server.Crash();
+            });
         }
 
         public void VisitCreateClient(CreateClient createClient) {
@@ -57,7 +60,10 @@ namespace PuppetMaster.Visitor {
         }
 
         public void VisitFreeze(Freeze freeze) {
-            Console.WriteLine($"Freeze {freeze.ProcessName}");
+            Task.Factory.StartNew(() => {
+                IPuppetMasterService server = this.GetServerService(freeze.ProcessName);
+                server.Freeze();
+            });
         }
 
         public void VisitScript(Script script) {
@@ -67,30 +73,35 @@ namespace PuppetMaster.Visitor {
         }
 
         public void VisitStatus(Status status) {
-            StringBuilder statusMessage = new StringBuilder();
-            foreach (KeyValuePair<string, Uri> entry in this.servers) {
-                statusMessage.Append(
-                    $"=============================================================================={Environment.NewLine}" +
-                    $"================================= SERVER INFO ================================{Environment.NewLine}" +
-                    $"=============================================================================={Environment.NewLine}" +
-                    $"Server ID: {entry.Key} {Environment.NewLine}");
+            Task.Factory.StartNew(() => {
+                StringBuilder statusMessage = new StringBuilder();
+                foreach (KeyValuePair<string, Uri> entry in this.servers) {
+                    statusMessage.Append(
+                        $"=============================================================================={Environment.NewLine}" +
+                        $"================================= SERVER INFO ================================{Environment.NewLine}" +
+                        $"=============================================================================={Environment.NewLine}" +
+                        $"Server ID: {entry.Key} {Environment.NewLine}");
 
-                try {
-                    IPuppetMasterService server = GetServerService(entry.Value);
+                    try {
+                        IPuppetMasterService server = GetServerService(entry.Value);
 
-                    statusMessage.Append(server.Status());
-                } catch (System.Net.Sockets.SocketException) {
-                    statusMessage.Append($"Server is dead. {Environment.NewLine}");
+                        statusMessage.Append(server.Status());
+                    } catch (System.Net.Sockets.SocketException) {
+                        statusMessage.Append($"Server is dead. {Environment.NewLine}");
+                    }
+
+                    statusMessage.Append(
+                        $"=============================================================================={Environment.NewLine}");
                 }
-
-                statusMessage.Append(
-                    $"=============================================================================={Environment.NewLine}");
-            }
-            Console.Write(statusMessage.ToString());
+                Console.Write(statusMessage.ToString());
+            });
         }
 
         public void VisitUnfreeze(Unfreeze unfreeze) {
-            Console.WriteLine($"Unfreeze {unfreeze.ProcessName}");
+            Task.Factory.StartNew(() => {
+                IPuppetMasterService server = this.GetServerService(unfreeze.ProcessName);
+                server.Unfreeze();
+            });
         }
 
         public void VisitWait(Wait wait) {
@@ -106,6 +117,11 @@ namespace PuppetMaster.Visitor {
                 Activator.GetObject(
                     typeof(IProcessCreationService),
                     $"tcp://{url.Host}:{Constants.PROCESS_CREATION_SERVICE_PORT}/{Constants.PROCESS_CREATION_SERVICE}");
+        }
+
+        private IPuppetMasterService GetServerService(string processName) {
+            this.servers.TryGetValue(processName, out Uri url);
+            return this.GetServerService(url);
         }
 
         private IPuppetMasterService GetServerService(Uri url) {

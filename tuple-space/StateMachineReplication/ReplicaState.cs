@@ -90,10 +90,10 @@ namespace StateMachineReplication {
                 $"Op Number: {this.opNumber} {Environment.NewLine}" +
                 $"Commit Number: {this.commitNumber} {Environment.NewLine}" +
                 $"View Number: {this.viewNumber} {Environment.NewLine}" +
-                $"{"View Configuration:",10} {"Server ID",10} {"URL",10}  {Environment.NewLine}");
+                $"{"View Configuration:",10} {"Server ID",-10} {"URL",-10}  {Environment.NewLine}");
 
             foreach (KeyValuePair<string, Uri> entry in this.Configuration) {
-                status.Append($"{"",10} {entry.Key,10} {entry.Value,10}");
+                status.Append($"{"                   ",10} {entry.Key,-10} {entry.Value,-10} {Environment.NewLine}");
             }
 
             status.Append(

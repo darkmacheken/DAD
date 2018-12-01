@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
@@ -14,7 +15,13 @@ namespace MessageService {
 
         private readonly TcpChannel channel;
 
+        private bool frozen;
+        private ConcurrentDictionary<IMessage, AutoResetEvent> handlers;
+
         public MessageServiceClient(Uri myUrl) {
+            this.frozen = false;
+            this.handlers = new ConcurrentDictionary<IMessage, AutoResetEvent>();
+
             //create tcp channel
             this.channel = new TcpChannel(myUrl.Port);
             ChannelServices.RegisterChannel(this.channel, false);
@@ -22,10 +29,16 @@ namespace MessageService {
         }
 
         public MessageServiceClient(TcpChannel channel) {
+            this.frozen = false;
+            this.handlers = new ConcurrentDictionary<IMessage, AutoResetEvent>();
+
             this.channel = channel;
         }
 
         public IResponse Request(IMessage message, Uri url) {
+            if (this.frozen) {
+                this.BlockFreezeState(message);
+            }
             Log.Debug($"Request called with parameters: message: {message}, url: {url}");
             MessageServiceServer server = GetRemoteMessageService(url);
             if (server != null) {
@@ -37,7 +50,7 @@ namespace MessageService {
 
         }
 
-        public IResponse Request(IMessage message, Uri url, int timeout) {
+       public IResponse Request(IMessage message, Uri url, int timeout) {
             Log.Debug($"Request called with parameters: message: {message}, url: {url}, timeout: {timeout}");
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             
@@ -156,11 +169,23 @@ namespace MessageService {
         }
 
         public void Freeze() {
-            throw new NotImplementedException();
+            this.frozen = true;
         }
 
         public void Unfreeze() {
-            throw new NotImplementedException();
+            this.frozen = false;
+            foreach (AutoResetEvent handler in this.handlers.Values) {
+                handler.Set();
+            }
+        }
+
+        private void BlockFreezeState(IMessage message) {
+            AutoResetEvent myHandler = new AutoResetEvent(false);
+            this.handlers.TryAdd(message, myHandler);
+            while (frozen) {
+                myHandler.WaitOne();
+            }
+            this.handlers.TryRemove(message, out myHandler);
         }
     }
 }

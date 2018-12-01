@@ -28,12 +28,12 @@ namespace Server {
 
         public void Freeze() {
             Log.Info("Freeze command issued.");
-            throw new NotImplementedException();
+            this.serverMessageLayer.Freeze();
         }
 
         public void Unfreeze() {
             Log.Info("Unfreeze command issued.");
-            throw new NotImplementedException();
+            this.serverMessageLayer.Unfreeze();
         }
 
         public string Status() {
