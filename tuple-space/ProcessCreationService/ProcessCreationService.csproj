@@ -4,16 +4,17 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{13222CD1-28C6-4869-A653-A11CF61BC95A}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MessageService</RootNamespace>
-    <AssemblyName>MessageService</AssemblyName>
+    <ProjectGuid>{055B7EB5-D8F9-4B15-B206-633226998322}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ProcessCreationService</RootNamespace>
+    <AssemblyName>ProcessCreationService</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,6 +24,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -45,18 +47,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Constants.cs" />
-    <Compile Include="Interfaces.cs" />
-    <Compile Include="ExecutorsDataObjects.cs" />
-    <Compile Include="Serializable\HandShake.cs" />
-    <Compile Include="Serializable\ProtocolMessages.cs" />
-    <Compile Include="ServerMessageWrapper.cs" />
-    <Compile Include="MessageServiceClient.cs" />
-    <Compile Include="MessageServiceServer.cs" />
-    <Compile Include="Serializable\ClientRequestMessages.cs" />
+    <Compile Include="ProcessCreationService.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Visitor\IMessageVisitor.cs" />
-    <Compile Include="Wrappers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PuppetMasterService\PuppetMasterService.csproj">
+      <Project>{829ac545-bc95-43e8-82e6-8001c5c26c1f}</Project>
+      <Name>PuppetMasterService</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="log4net.config.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

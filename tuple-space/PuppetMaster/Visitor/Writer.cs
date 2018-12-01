@@ -14,7 +14,7 @@ namespace PuppetMaster.Visitor {
         }
 
         public void VisitCreateServer(CreateServer createServer) {
-            Console.WriteLine($"Server {createServer.Id} {createServer.Url} {createServer.MinDelay} {createServer.MaxDelay}");
+            Console.WriteLine($"Server {createServer.Id} {createServer.Url} {createServer.MinDelay} {createServer.MaxDelay} {createServer.Protocol}");
         }
 
         public void VisitFreeze(Freeze freeze) {

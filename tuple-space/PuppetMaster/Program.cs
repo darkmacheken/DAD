@@ -7,11 +7,9 @@ using PuppetMaster.Visitor;
 
 namespace PuppetMaster {
     public static class PuppetMaster {
-        private static readonly int PUPPET_MASTER_PORT = 10001;
-
         public static void Main(string[] args) {
             // Create and register channel
-            TcpChannel channel = new TcpChannel(PUPPET_MASTER_PORT);
+            TcpChannel channel = new TcpChannel(PuppetMasterService.Constants.PUPPET_MASTER_PORT);
             ChannelServices.RegisterChannel(channel, false);
 
             IBasicVisitor interpreter = new Interpreter();

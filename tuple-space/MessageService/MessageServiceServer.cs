@@ -47,5 +47,9 @@ namespace MessageService {
         public void Unfreeze() {
             throw new NotImplementedException();
         }
+
+        public override object InitializeLifetimeService() {
+            return null;
+        }
     }
 }

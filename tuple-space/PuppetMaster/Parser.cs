@@ -45,6 +45,12 @@ namespace PuppetMaster {
                             int minDelay = int.Parse(words[3]);
                             int maxDelay = int.Parse(words[4]);
                             string protocol = words[5];
+
+                            if (minDelay < 0 || maxDelay < 0 || minDelay > maxDelay) {
+                                throw new IncorrectCommandException(i,
+                                    $"{Environment.NewLine}Expected: min_delay >= 0 and max_delay >= 0 and min_delay <= max_delay");
+                            }
+
                             script.AddNode(new CreateServer(id, url, minDelay, maxDelay, protocol));
                             break;
                         }

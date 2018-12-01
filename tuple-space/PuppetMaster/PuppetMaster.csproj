@@ -52,7 +52,12 @@
     <Compile Include="Visitor\Writer.cs" />
     <Compile Include="CommandStructure\BasicNode.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\PuppetMasterService\PuppetMasterService.csproj">
+      <Project>{829ac545-bc95-43e8-82e6-8001c5c26c1f}</Project>
+      <Name>PuppetMasterService</Name>
+    </ProjectReference>
+  </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
   </ItemGroup>

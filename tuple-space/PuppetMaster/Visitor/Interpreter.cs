@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using PuppetMaster.CommandStructure;
+using PuppetMasterService;
 
 namespace PuppetMaster.Visitor {
     public class Interpreter : IBasicVisitor {
@@ -11,11 +13,26 @@ namespace PuppetMaster.Visitor {
         }
 
         public void VisitCreateClient(CreateClient createClient) {
-            Console.WriteLine($"Client {createClient.Id} {createClient.Url} {createClient.ScriptFile}");
+            Task.Factory.StartNew(() => {
+                IProcessCreationService processCreationService = GetProcessCreationService(createClient.Url);
+
+                processCreationService.CreateClient(
+                    createClient.Id, 
+                    createClient.Url, 
+                    createClient.ScriptFile);
+            });
         }
 
         public void VisitCreateServer(CreateServer createServer) {
-            Console.WriteLine($"Server {createServer.Id} {createServer.Url} {createServer.MinDelay} {createServer.MaxDelay}");
+            Task.Factory.StartNew(() => {
+                IProcessCreationService processCreationService = GetProcessCreationService(createServer.Url);
+                processCreationService.CreateServer(
+                    createServer.Id, 
+                    createServer.Url, 
+                    createServer.MinDelay, 
+                    createServer.MaxDelay, 
+                    createServer.Protocol);
+            });
         }
 
         public void VisitFreeze(Freeze freeze) {
@@ -42,6 +59,13 @@ namespace PuppetMaster.Visitor {
 
         public void VisitExit(Exit exit) {
             Environment.Exit(0);
+        }
+
+        private IProcessCreationService GetProcessCreationService(Uri url) {
+            return (IProcessCreationService)
+                Activator.GetObject(
+                    typeof(IProcessCreationService),
+                    $"tcp://{url.Host}:{Constants.PROCESS_CREATION_SERVICE_PORT}/{Constants.PROCESS_CREATION_SERVICE}");
         }
     }
 }

@@ -11,7 +11,7 @@ namespace PuppetMaster.CommandStructure {
 
         public CreateServer(string id, Uri url, int minDelay, int maxDelay, string protocol) {
             this.Id = id;
-            this.Url = url;
+            this.Url = new Uri($"tcp://{url.Host}:{url.Port}");
             this.MinDelay = minDelay;
             this.MaxDelay = maxDelay;
             this.Protocol = protocol;
