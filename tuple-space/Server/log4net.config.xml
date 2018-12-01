@@ -10,6 +10,6 @@
     <appender-ref ref="Console" />
   </root>
   <logger name="MessageService">
-    <level value="INFO"/>
+    <level value="DEBUG"/>
   </logger>
 </log4net>

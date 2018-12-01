@@ -78,13 +78,10 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
-            AutoResetEvent myHandler = new AutoResetEvent(false);
-            this.replicaState.HandlersPrepare.TryAdd(prepareMessage.OpNumber, myHandler);
             // It must wait for previous messages.
             while (this.replicaState.OpNumber != (prepareMessage.OpNumber - 1)) {
-                myHandler.WaitOne();
+                this.replicaState.HandlersPrepare.WaitOne();
             }
-            this.replicaState.HandlersPrepare.TryRemove(prepareMessage.OpNumber, out myHandler);
 
             int opNumber;
             int replicaView;
@@ -95,25 +92,19 @@ namespace StateMachineReplication.StateProcessor {
             }
 
             // Notify all threads that are waiting for new prepare messages
-            foreach (AutoResetEvent eventHandler in this.replicaState.HandlersCommits.Values) {
-                eventHandler.Set();
-            }
-            foreach (AutoResetEvent eventHandler in this.replicaState.HandlersPrepare.Values) {
-                eventHandler.Set();
-            }
+            this.replicaState.HandlersPrepare.Set();
+            this.replicaState.HandlersPrepare.Reset();
+            this.replicaState.HandlersCommits.Set();
+            this.replicaState.HandlersCommits.Reset();
 
             return new PrepareOk(this.replicaState.ServerId, replicaView, opNumber);
         }
 
         public IResponse VisitCommitMessage(CommitMessage commitMessage) {
-            AutoResetEvent myHandler = new AutoResetEvent(false);
-            this.replicaState.HandlersCommits.TryAdd(commitMessage.CommitNumber, myHandler);
             // It must confirm that it received the prepare message.
             while (commitMessage.CommitNumber > this.replicaState.OpNumber) {
-                myHandler.WaitOne();
+                this.replicaState.HandlersCommits.WaitOne();
             }
-
-            this.replicaState.HandlersCommits.TryRemove(commitMessage.CommitNumber, out myHandler);
 
             ClientRequest request = this.replicaState.Logger[commitMessage.CommitNumber];
             Log.Debug($"Requesting {request} to Tuple Space.");
@@ -150,6 +141,21 @@ namespace StateMachineReplication.StateProcessor {
                     return ProcessRequest.DROP;
                 }
 
+                if (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
+                    if (!this.replicaState.HandlersClient.ContainsKey(clientRequest.ClientId)) {
+                        this.replicaState.HandlersClient.TryAdd(
+                            clientRequest.ClientId,
+                            new EventWaitHandle(false, EventResetMode.ManualReset));
+                    }
+
+                    this.replicaState.HandlersClient.TryGetValue(
+                        clientRequest.ClientId,
+                        out EventWaitHandle myHandler);
+                    while (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
+                        myHandler.WaitOne();
+                    }
+                }
+
                 if (clientRequest.RequestNumber == clientResponse.Item1) {
                     // Duplicate Request
                     // If it is in execution.. wait.
@@ -172,6 +178,15 @@ namespace StateMachineReplication.StateProcessor {
             this.replicaState.ClientTable[clientRequest.ClientId] =
                 new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientExecutor);
 
+            // Signal blocked threads
+            this.replicaState.HandlersClient.TryGetValue(
+                clientRequest.ClientId,
+                out EventWaitHandle handler);
+            if (handler != null) {
+                handler.Set();
+                handler.Reset();
+            }
+            
             // Add to execution queue
             this.replicaState.ExecutionQueue.Add(clientExecutor);
 

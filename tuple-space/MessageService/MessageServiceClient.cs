@@ -16,11 +16,11 @@ namespace MessageService {
         private readonly TcpChannel channel;
 
         private bool frozen;
-        private ConcurrentDictionary<IMessage, AutoResetEvent> handlers;
+        private EventWaitHandle freezeHandler;
 
         public MessageServiceClient(Uri myUrl) {
             this.frozen = false;
-            this.handlers = new ConcurrentDictionary<IMessage, AutoResetEvent>();
+            this.freezeHandler = new EventWaitHandle(false, EventResetMode.ManualReset);
 
             //create tcp channel
             this.channel = new TcpChannel(myUrl.Port);
@@ -30,15 +30,15 @@ namespace MessageService {
 
         public MessageServiceClient(TcpChannel channel) {
             this.frozen = false;
-            this.handlers = new ConcurrentDictionary<IMessage, AutoResetEvent>();
+            this.freezeHandler = new EventWaitHandle(false, EventResetMode.ManualReset);
 
             this.channel = channel;
         }
 
         public IResponse Request(IMessage message, Uri url) {
-            if (this.frozen) {
-                this.BlockFreezeState(message);
-            }
+            // block if frozen
+            this.BlockFreezeState(message);
+
             Log.Debug($"Request called with parameters: message: {message}, url: {url}");
             MessageServiceServer server = GetRemoteMessageService(url);
             if (server != null) {
@@ -51,6 +51,9 @@ namespace MessageService {
         }
 
        public IResponse Request(IMessage message, Uri url, int timeout) {
+           // block if frozen
+           this.BlockFreezeState(message);
+
             Log.Debug($"Request called with parameters: message: {message}, url: {url}, timeout: {timeout}");
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             
@@ -78,6 +81,9 @@ namespace MessageService {
             Uri[] urls,
             int numberResponsesToWait,
             int timeout) {
+            // block if frozen
+            this.BlockFreezeState(message);
+
             Log.Debug($"Multicast Request called with parameters: message: {message}, url: {urls},"
                       + $"numberResponsesToWait: {numberResponsesToWait}, timeout: {timeout}");
 
@@ -174,18 +180,14 @@ namespace MessageService {
 
         public void Unfreeze() {
             this.frozen = false;
-            foreach (AutoResetEvent handler in this.handlers.Values) {
-                handler.Set();
-            }
+            this.freezeHandler.Set();
+            this.freezeHandler.Reset();
         }
 
         private void BlockFreezeState(IMessage message) {
-            AutoResetEvent myHandler = new AutoResetEvent(false);
-            this.handlers.TryAdd(message, myHandler);
             while (frozen) {
-                myHandler.WaitOne();
+                this.freezeHandler.WaitOne();
             }
-            this.handlers.TryRemove(message, out myHandler);
         }
     }
 }

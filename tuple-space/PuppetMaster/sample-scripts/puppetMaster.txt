@@ -1,14 +1,16 @@
-Server s1 tcp://localhost:8080/ 10 1000 XL
+Server 1 tcp://localhost:8080/ 10 1000 XL
 Wait 500
-Server s2 tcp://localhost:8081/ 10 1000 XL
+Server 2 tcp://localhost:8081/ 10 1000 XL
 Wait 500
-Server s3 tcp://localhost:8082/ 10 1000 XL
+Server 3 tcp://localhost:8082/ 10 1000 XL
 Wait 500
 Client c1 tcp://localhost:8083 ../../../Client/sample-scripts/sampleClientScript2-1.txt
 Client c2 tcp://localhost:8084 ../../../Client/sample-scripts/sampleClientScript2-2.txt
-Wait 500
-Freeze s1
+Wait 5000
+Freeze 1
 Wait 5000
 Status
 Wait 5000
-Unfreeze s1
+Unfreeze 1
+Wait 5000
+Status

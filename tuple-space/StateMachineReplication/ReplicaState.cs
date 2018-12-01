@@ -43,9 +43,10 @@ namespace StateMachineReplication {
         // Request SMRExecutor
         private readonly RequestsExecutor requestsExecutor;
 
-        // Handlers
-        public ConcurrentDictionary<int, AutoResetEvent> HandlersCommits { get; }
-        public ConcurrentDictionary<int, AutoResetEvent> HandlersPrepare { get; }
+        // Wait Handlers
+        public EventWaitHandle HandlersCommits { get; }
+        public EventWaitHandle HandlersPrepare { get; }
+        public ConcurrentDictionary<string, EventWaitHandle> HandlersClient { get; }
 
         public ReplicaState(MessageServiceClient messageServiceClient, Uri url, string serverId) {
             this.MessageServiceClient = messageServiceClient;
@@ -65,8 +66,11 @@ namespace StateMachineReplication {
             this.ExecutionQueue = new OrderedQueue();
             this.TupleSpace = new TupleSpace.TupleSpace();
             this.requestsExecutor = new RequestsExecutor(this, this.MessageServiceClient);
-            this.HandlersCommits = new ConcurrentDictionary<int, AutoResetEvent>();
-            this.HandlersPrepare = new ConcurrentDictionary<int, AutoResetEvent>();
+
+            // Handlers
+            this.HandlersCommits = new EventWaitHandle(false, EventResetMode.ManualReset);
+            this.HandlersPrepare = new EventWaitHandle(false, EventResetMode.ManualReset);
+            this.HandlersClient = new ConcurrentDictionary<string, EventWaitHandle>();
 
             // Task that executes the requests.
             Task.Factory.StartNew(() => {
