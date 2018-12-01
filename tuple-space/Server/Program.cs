@@ -10,7 +10,12 @@ namespace Server
     public static class Program {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(Program));
 
-        static void Main(string[] args) {
+        public static void Main(string[] args) {
+            if (args.Length != 5) {
+                Log.Fatal("Expected: Server server_id URL min_delay max_delay protocol");
+                Environment.Exit(1);
+            }
+
             string serverId = args[0];
             Uri url = new Uri(args[1]);
             string protocol = args[4];
@@ -36,6 +41,10 @@ namespace Server
 
             // init ProtocolUsed
             protocolToUse.Init(serverMessage.ServiceClient, url, serverId);
+
+            // create puppet master service
+            PuppetMasterServer puppetMasterServer = new PuppetMasterServer(protocolToUse, serverMessage);
+
             Console.ReadLine();
         }
     }

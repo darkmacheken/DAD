@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 
 using MessageService;
@@ -47,6 +48,24 @@ namespace XuLiskov {
             this.TupleSpace = new TupleSpace.TupleSpace();
 
             this.RequestsExecutor = new RequestsExecutor(this);
+        }
+
+        public string Status() {
+            StringBuilder status = new StringBuilder();
+            status.Append(
+                $"Server ID: {this.ServerId} {Environment.NewLine}" +
+                $"View Number: {this.viewNumber} {Environment.NewLine}" +
+                $"{"View Configuration:", 10} {"Server ID", -10} {"URL", -10}  {Environment.NewLine}");
+
+            foreach (KeyValuePair<string, Uri> entry in this.Configuration) {
+                status.Append($"{"                   ", 10} {entry.Key, -10} {entry.Value, -10} {Environment.NewLine}");
+            }
+
+            status.Append(
+                $"----------------------------- TUPLE SPACE LAYER ------------------------------{Environment.NewLine}");
+            status.Append(this.TupleSpace.Status());
+
+            return status.ToString();
         }
     }
 }

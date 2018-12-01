@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using TupleSpace.Exceptions;
 
 namespace TupleSpace {
@@ -157,6 +158,17 @@ namespace TupleSpace {
                 }
             }
             return result;
+        }
+
+        public string Status() {
+            StringBuilder status = new StringBuilder();
+            lock (this.Tuples) {
+                foreach (Tuple tuple in this.Tuples) {
+                    status.Append($"{tuple} {Environment.NewLine}");
+                }
+            }
+
+            return status.ToString();
         }
     }
 }

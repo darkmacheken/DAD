@@ -209,5 +209,8 @@ namespace StateMachineReplication.StateProcessor {
             return opNumber;
         }
 
+        public override string ToString() {
+            return "Normal";
+        }
     }
 }

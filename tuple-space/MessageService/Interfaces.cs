@@ -55,5 +55,7 @@ namespace MessageService {
         IResponse ProcessRequest(IMessage message);
 
         void Init(MessageServiceClient messageServiceClient, Uri url, string serverId);
+
+        string Status();
     }
 }

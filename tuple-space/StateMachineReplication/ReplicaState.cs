@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MessageService;
@@ -78,6 +79,28 @@ namespace StateMachineReplication {
 
         public bool IAmTheLeader() {
             return string.Equals(this.ServerId, this.Leader);
+        }
+
+        public string Status() {
+            StringBuilder status = new StringBuilder();
+            status.Append(
+                $"Server ID: {this.ServerId} {Environment.NewLine}" +
+                $"Leader: {this.Leader} {Environment.NewLine}" +
+                $"State: {this.State} {Environment.NewLine}" +
+                $"Op Number: {this.opNumber} {Environment.NewLine}" +
+                $"Commit Number: {this.commitNumber} {Environment.NewLine}" +
+                $"View Number: {this.viewNumber} {Environment.NewLine}" +
+                $"{"View Configuration:",10} {"Server ID",10} {"URL",10}  {Environment.NewLine}");
+
+            foreach (KeyValuePair<string, Uri> entry in this.Configuration) {
+                status.Append($"{"",10} {entry.Key,10} {entry.Value,10}");
+            }
+
+            status.Append(
+                $"----------------------------- TUPLE SPACE LAYER ------------------------------{Environment.NewLine}");
+            status.Append(this.TupleSpace.Status());
+
+            return status.ToString();
         }
     }
 }

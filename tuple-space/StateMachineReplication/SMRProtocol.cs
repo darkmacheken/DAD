@@ -15,6 +15,16 @@ namespace StateMachineReplication {
             this.ReplicaState = new ReplicaState(messageServiceClient, url, serverId);
         }
 
+        public string Status() {
+            string status;
+            lock (this.ReplicaState) {
+                status =
+                    $"Protocol: State Machine Replication {Environment.NewLine}" +
+                    $"{this.ReplicaState.Status()}";
+            }
+            return status;
+        }
+
         public IResponse ProcessRequest(IMessage message) {
             return message.Accept(this.ReplicaState.State);
         }
