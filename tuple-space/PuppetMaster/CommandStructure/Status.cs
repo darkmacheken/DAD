@@ -1,13 +1,12 @@
-﻿using System;
-using PuppetMaster.Visitor;
+﻿using PuppetMaster.Visitor;
 
 namespace PuppetMaster.CommandStructure {
     public class Status : Command {
 
         public Status() {}
 
-        public override void Accept(IBasicVisitor v) {
-            v.VisitStatus(this);
+        public override void Accept(IBasicVisitor visitor) {
+            visitor.VisitStatus(this);
         }
 
     }

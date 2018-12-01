@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 
 using MessageService.Visitor;
 
 namespace MessageService.Serializable {
+
+    // SMR ----------------------------------------------------------------------------------------------------------------
     [Serializable]
     public class PrepareMessage : IMessage {
         public string ServerId { get; set; }
@@ -19,8 +22,12 @@ namespace MessageService.Serializable {
             this.CommitNumber = commitNumber;
         }
 
-        public IResponse Accept(IMessageVisitor visitor) {
+        public IResponse Accept(IMessageSMRVisitor visitor) {
             return visitor.VisitPrepareMessage(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            throw new NotImplementedException();
         }
 
         public override string ToString() {
@@ -58,12 +65,76 @@ namespace MessageService.Serializable {
             this.CommitNumber = commitNumber;
         }
 
-        public IResponse Accept(IMessageVisitor visitor) {
+        public IResponse Accept(IMessageSMRVisitor visitor) {
             return visitor.VisitCommitMessage(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            throw new NotImplementedException();
         }
 
         public override string ToString() {
             return $"{{ Server ID: {this.ServerId}, View Number: {this.ViewNumber}, Commit Number: {this.CommitNumber} }}";
+        }
+    }
+
+    // XL ----------------------------------------------------------------------------------------------------------------
+
+    [Serializable]
+    public class GetAndLockRequest : ClientRequest {
+        public GetAndLockRequest(int viewNumber, string clientId, int requestNumber, string tuple) :
+            base(viewNumber, clientId, requestNumber, tuple) { }
+
+        
+        public override IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitGetAndLock(this);
+        }
+
+        public override IResponse Accept(IMessageSMRVisitor visitor) {
+            throw new NotImplementedException();
+        }
+
+        public override string ToString() {
+            return $"{{ {base.ToString()}, {this.ClientId}, {this.RequestNumber}, {this.Tuple} }}";
+        }
+    }
+
+    [Serializable]
+    public class GetAndLockResponse : ClientResponse {
+        public List<string> Tuples { get; set; }
+
+        public GetAndLockResponse(int requestNumber, int viewNumber, List<string> tuples ) : 
+            base(requestNumber, viewNumber) {
+            this.Tuples = tuples;
+        }
+
+        public override string ToString() {
+            return $"{{ RequestNumber: {this.RequestNumber}, ViewNumber: {this.ViewNumber}, Tuples: {this.Tuples}}}";
+        }
+    }
+
+    [Serializable]
+    public class UnlockRequest : ClientRequest {
+        public int RequestNumberLock { get; set; }
+
+        public UnlockRequest(int viewNumber, string clientId, int requestNumber)
+            : base(viewNumber, clientId, requestNumber, string.Empty) { }
+
+        public UnlockRequest(int viewNumber, string clientId, int requestNumber, int requestNumberLock)
+            : base(viewNumber, clientId, requestNumber, string.Empty) {
+            this.RequestNumberLock = requestNumberLock;
+        }
+
+        public override IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitUnlockRequest(this);
+        }
+
+        public override IResponse Accept(IMessageSMRVisitor visitor) {
+            throw new NotImplementedException();
+        }
+
+        public override string ToString() {
+            return $"{{Client ID: {this.ClientId}, RequestNumber: {this.RequestNumber}}}";
         }
     }
 }

@@ -13,8 +13,8 @@ namespace PuppetMaster.CommandStructure {
             this.scriptFile = scriptFile;
         }
 
-        public override void Accept(IBasicVisitor v) {
-            v.VisitCreateClient(this);
+        public override void Accept(IBasicVisitor visitor) {
+            visitor.VisitCreateClient(this);
         }
 
         public string Id => this.id;

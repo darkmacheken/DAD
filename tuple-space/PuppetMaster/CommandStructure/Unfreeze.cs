@@ -4,8 +4,8 @@ namespace PuppetMaster.CommandStructure {
    public class Unfreeze : DebuggingCommand {
         public Unfreeze(string processName) : base(processName) { }
 
-        public override void Accept(IBasicVisitor v) {
-            v.VisitUnfreeze(this);
+        public override void Accept(IBasicVisitor visitor) {
+            visitor.VisitUnfreeze(this);
         }
     }
 }

@@ -8,9 +8,9 @@ namespace PuppetMaster.CommandStructure {
             this.time = time;
         }
 
-        public override void Accept(IBasicVisitor v)
+        public override void Accept(IBasicVisitor visitor)
         {
-            v.VisitWait(this);
+            visitor.VisitWait(this);
         }
 
         public int Time => this.time;

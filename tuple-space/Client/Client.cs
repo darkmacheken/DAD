@@ -6,8 +6,9 @@ namespace Client {
     public class Client {
         public string Id { get; }
         public Uri Url { get; }
+        public int ViewId { get; }
 
-        private int requestNumber;
+        public int RequestNumber { get; set; }
 
         public Script Script { get; }
         private readonly Parser parser;
@@ -18,11 +19,12 @@ namespace Client {
             this.Script = new Script();
             this.parser = new Parser();
             this.SetScript(scriptFile);
-            this.requestNumber = 0;
+            this.RequestNumber = 0;
+            this.ViewId = 0;
         }
 
         public int GetRequestNumber() {
-            return this.requestNumber++;
+            return this.RequestNumber++;
         }
 
         private void SetScript(string scriptFile) {

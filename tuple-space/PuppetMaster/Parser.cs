@@ -1,15 +1,19 @@
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
-using PuppetMaster.Exceptions;
 using PuppetMaster.CommandStructure;
+using PuppetMaster.Exceptions;
 
 namespace PuppetMaster {
-    public class Parser {
-        public Script Parse(string[] lines) {
-            Script script = new Script();
-            Regex numRegex = new Regex("^[0-9]+$");
+    public static class Parser {
+        public static Script Parse(string command) {
+            return Parse(new[] { command });
+        }
 
-            for (int i=0; i < lines.Length; i++) {
+        public static Script Parse(string[] lines) {
+            Script script = new Script();
+
+            for (int i = 0; i < lines.Length; i++) {
 
                 if (lines[i].StartsWith("\n") || lines[i].StartsWith("\r\n") || string.IsNullOrWhiteSpace(lines[i])) {
                     continue;
@@ -21,54 +25,115 @@ namespace PuppetMaster {
                 Regex exprRegex = new Regex("(\\n|\\r)+");
                 string command = exprRegex.Replace(lines[i], string.Empty);
 
-                string[] words = Regex.Split(command, "(\\s|\\t)+");
+                string[] words = Regex.Split(command, "(\\s|\\t)+")
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .ToArray();
 
-                if (words[0] == "Server") {
-                    try {
-                        string id = words[2];
-                        Uri url = new Uri(words[4]);
-                        int minDelay = Int32.Parse(words[6]);
-                        int maxDelay = Int32.Parse(words[8]);
-                        script.AddNode(new CreateServer(id, url, minDelay, maxDelay));
-                    } catch (Exception ex) {
-                        throw new IncorrectCommandException(i, ex.Message);
+                string expectedMessage = "Unexpected Command";
+                try {
+                    switch (words[0]) {
+                        case "Server": {
+                            expectedMessage =
+                                $"{Environment.NewLine}Expected: Server server_id URL min_delay max_delay protocol";
+
+                            if (words.Length != 6) {
+                                throw new IncorrectCommandException(i, expectedMessage);
+                            }
+
+                            string id = words[1];
+                            Uri url = new Uri(words[2]);
+                            int minDelay = int.Parse(words[3]);
+                            int maxDelay = int.Parse(words[4]);
+                            string protocol = words[5];
+                            script.AddNode(new CreateServer(id, url, minDelay, maxDelay, protocol));
+                            break;
+                        }
+                        case "Client": {
+                            expectedMessage = $"{Environment.NewLine}Expected: Client client_id URL script_file";
+
+                            if (words.Length != 4) {
+                                throw new IncorrectCommandException(i, expectedMessage);
+                            }
+
+                            string id = words[1];
+                            Uri url = new Uri(words[2]);
+                            string scriptFile = words[3];
+                            script.AddNode(new CreateClient(id, url, scriptFile));
+                            break;
+                        }
+                        case "Status": {
+                            expectedMessage = $"{Environment.NewLine}Expected: Status";
+
+                            if (words.Length != 1) {
+                                throw new IncorrectCommandException(i, expectedMessage);
+                            }
+
+                            script.AddNode(new Status());
+                            break;
+                        }
+                        case "Crash": {
+                            expectedMessage = $"{Environment.NewLine}Expected: Crash server_id";
+
+                            if (words.Length != 2) {
+                                throw new IncorrectCommandException(i, expectedMessage);
+                            }
+
+                            string processName = words[1];
+                            script.AddNode(new Crash(processName));
+                            break;
+                        }
+                        case "Freeze": {
+                            expectedMessage = $"{Environment.NewLine}Expected: Freeze server_id";
+
+                            if (words.Length != 2) {
+                                throw new IncorrectCommandException(i, expectedMessage);
+                            }
+
+                            string processName = words[1];
+                            script.AddNode(new Freeze(processName));
+                            break;
+                        }
+                        case "Unfreeze": {
+                            expectedMessage = $"{Environment.NewLine}Expected: Unfreeze server_id";
+
+                            if (words.Length != 2) {
+                                throw new IncorrectCommandException(i, expectedMessage);
+                            }
+
+                            string processName = words[1];
+                            script.AddNode(new Unfreeze(processName));
+                            break;
+                        }
+                        case "Wait": {
+                            expectedMessage = $"{Environment.NewLine}Expected: Wait x_ms";
+
+                            if (words.Length != 2) {
+                                throw new IncorrectCommandException(i, expectedMessage);
+                            }
+
+                            int time = int.Parse(words[1]);
+                            script.AddNode(new Wait(time));
+                            break;
+                        }
+                        case "Exit": {
+                            expectedMessage = $"{Environment.NewLine}Expected: Exit";
+
+                            if (words.Length != 1) {
+                                throw new IncorrectCommandException(i, expectedMessage);
+                            }
+
+                            script.AddNode(new Exit());
+                            break;
+                        }
+                        default:
+                            throw new IncorrectCommandException(i, expectedMessage);
                     }
-
-                } else if (words[0] == "Client") {
-                    try {
-                        string id = words[2];
-                        Uri url = new Uri(words[4]);
-                        string scriptFile = words[6];
-                        script.AddNode(new CreateClient(id, url, scriptFile));
-                    } catch (Exception ex) {
-                        throw new IncorrectCommandException(i, ex.Message);
+                } catch (Exception e) {
+                    if (e is IncorrectCommandException) {
+                        throw;
+                    } else {
+                        throw new IncorrectCommandException(i, expectedMessage);
                     }
-
-                } else if (words[0] == "Status") {
-                    script.AddNode(new Status());
-
-                } else if (words[0] == "Crash") {
-                    string processName = words[2];
-                    script.AddNode(new Crash(processName));
-                
-                } else if (words[0] == "Freeze") {
-                    string processName = words[2];
-                    script.AddNode(new Freeze(processName));
-                
-                } else if (words[0] == "Unfreeze") {
-                    string processName = words[2];
-                    script.AddNode(new Unfreeze(processName));
-
-                } else if (words[0] == "Wait") {
-                    try {
-                        int time = Int32.Parse(words[2]);
-                        script.AddNode(new Wait(time));
-                    } catch (Exception ex) {
-                        throw new IncorrectCommandException(i, ex.Message);
-                    }
-
-                } else {
-                    throw new IncorrectCommandException(i);
                 }
             }
             return script;

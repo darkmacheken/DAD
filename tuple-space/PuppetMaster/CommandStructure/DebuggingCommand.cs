@@ -1,13 +1,9 @@
-﻿using PuppetMaster.Visitor;
-
-namespace PuppetMaster.CommandStructure {
+﻿namespace PuppetMaster.CommandStructure {
     public abstract class DebuggingCommand : Command {
-        private readonly string processName;
-
         public DebuggingCommand(string processName) {
-            this.processName = processName;
+            this.ProcessName = processName;
         }
 
-        public string ProcessName => this.processName;
+        public string ProcessName { get; }
     }
 }

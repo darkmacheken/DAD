@@ -17,5 +17,7 @@ namespace PuppetMaster.Visitor {
         void VisitUnfreeze(Unfreeze unfreeze);
 
         void VisitWait(Wait wait);
+
+        void VisitExit(Exit exit);
     }
 }

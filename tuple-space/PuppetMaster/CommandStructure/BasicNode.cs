@@ -4,6 +4,6 @@ namespace PuppetMaster.CommandStructure {
     public abstract class BasicNode {
         public BasicNode() {}
 
-        public abstract void Accept(IBasicVisitor v);
+        public abstract void Accept(IBasicVisitor visitor);
     }
 }
