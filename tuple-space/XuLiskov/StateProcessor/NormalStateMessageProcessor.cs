@@ -40,9 +40,9 @@ namespace XuLiskov.StateProcessor {
             return ExecuteRequest(unlockRequest, new UnlockExecutor(unlockRequest));
         }
 
-        public IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest) {
+        public IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest) {
             Uri[] viewConfiguration = this.replicaState.Configuration.Values.ToArray();
-            return new HandShakeResponse(Protocol.XuLiskov, this.replicaState.ViewNumber, viewConfiguration);
+            return new ClientHandShakeResponse(Protocol.XuLiskov, this.replicaState.ViewNumber, viewConfiguration);
         }
 
         private IResponse ExecuteRequest(ClientRequest clientRequest, Executor clientExecutor) {

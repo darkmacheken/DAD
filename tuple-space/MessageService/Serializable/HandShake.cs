@@ -10,11 +10,11 @@ namespace MessageService.Serializable {
     }
 
     [Serializable]
-    public class HandShakeRequest : ClientRequest {
-        public HandShakeRequest(string clientId) : base(clientId) { }
+    public class ClientHandShakeRequest : ClientRequest {
+        public ClientHandShakeRequest(string clientId) : base(clientId) { }
 
         public IResponse Accept(IMessageVisitor visitor) {
-            return visitor.VisitHandShakeRequest(this);
+            return visitor.VisitClientHandShakeRequest(this);
         }
 
         public override string ToString() {
@@ -22,21 +22,21 @@ namespace MessageService.Serializable {
         }
 
         public override IResponse Accept(IMessageSMRVisitor visitor) {
-            return visitor.VisitHandShakeRequest(this);
+            return visitor.VisitClientHandShakeRequest(this);
         }
 
         public override IResponse Accept(IMessageXLVisitor visitor) {
-            return visitor.VisitHandShakeRequest(this);
+            return visitor.VisitClientHandShakeRequest(this);
         }
     }
 
     [Serializable]
-    public class HandShakeResponse : IResponse {
+    public class ClientHandShakeResponse : IResponse {
         public Protocol ProtocolUsed { get; set; }
         public int ViewNumber { get; set; }
         public Uri[] ViewConfiguration { get; set; }
 
-        public HandShakeResponse(Protocol protocolUsed, int viewNumber, Uri[] viewConfiguration) {
+        public ClientHandShakeResponse(Protocol protocolUsed, int viewNumber, Uri[] viewConfiguration) {
             this.ProtocolUsed = protocolUsed;
             this.ViewNumber = viewNumber;
             this.ViewConfiguration = viewConfiguration;

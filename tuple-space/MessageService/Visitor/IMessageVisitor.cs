@@ -8,13 +8,21 @@ namespace MessageService.Visitor {
 
         IResponse VisitReadRequest(ReadRequest readRequest);
       
-        IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest);
+        IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest);
     }
 
     public interface IMessageSMRVisitor : IMessageVisitor {
         IResponse VisitPrepareMessage(PrepareMessage prepareMessage);
 
         IResponse VisitCommitMessage(CommitMessage commitMessage);
+
+        IResponse VisitStartViewChange(StartViewChange startViewChange);
+
+        IResponse VisitDoViewChange(DoViewChange doViewChange);
+
+        IResponse VisitStartChange(StartChange startChange);
+
+        IResponse VisitRecovery(Recovery recovery);
     }
 
     public interface IMessageXLVisitor : IMessageVisitor {

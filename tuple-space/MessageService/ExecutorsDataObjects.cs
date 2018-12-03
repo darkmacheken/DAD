@@ -73,6 +73,21 @@ namespace MessageService {
         }
     }
 
+    public static class ExecutorFactory {
+        public static Executor Factory(ClientRequest clientRequest) {
+            Executor clientExecutor = null;
+            if (clientRequest is AddRequest) {
+                clientExecutor = new AddExecutor(clientRequest);
+            } else if (clientRequest is TakeRequest) {
+                clientExecutor = new TakeExecutor(clientRequest);
+            } else if (clientRequest is ReadRequest) {
+                clientExecutor = new ReadExecutor(clientRequest);
+            }
+
+            return clientExecutor;
+        }
+    }
+
     // XL --------------------------------------------------------------------------------
     public abstract class ExecutorXL : Executor {
         protected ExecutorXL(string clientId, int requestNumber, string tuple) 

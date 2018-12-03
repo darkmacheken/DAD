@@ -18,8 +18,8 @@ namespace Client {
                 MessageServiceClient messageServiceClient = new MessageServiceClient(client.Url);
 
                 // Do the handshake
-                HandShakeResponse response = (HandShakeResponse)messageServiceClient.Request(
-                    new HandShakeRequest(client.Id),
+                ClientHandShakeResponse response = (ClientHandShakeResponse)messageServiceClient.Request(
+                    new ClientHandShakeRequest(client.Id),
                     new Uri("tcp://localhost:8080"));
 
                 

@@ -5,6 +5,7 @@ using System.Threading;
 using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
+using Timeout = MessageService.Timeout;
 
 namespace StateMachineReplication.StateProcessor {
     internal enum ProcessRequest { DROP, LAST_EXECUTION}
@@ -109,14 +110,7 @@ namespace StateMachineReplication.StateProcessor {
             ClientRequest request = this.replicaState.Logger[commitMessage.CommitNumber];
             Log.Debug($"Requesting {request} to Tuple Space.");
 
-            Executor requestExecutor = null;
-            if (request is AddRequest) {
-                requestExecutor = new AddExecutor(request);
-            } else if (request is TakeRequest) {
-                requestExecutor = new TakeExecutor(request);
-            } else if (request is ReadRequest) {
-                requestExecutor = new ReadExecutor(request);
-            }
+            Executor requestExecutor = ExecutorFactory.Factory(request);
 
             // Update Client Table
             this.replicaState.ClientTable[request.ClientId] =
@@ -127,9 +121,50 @@ namespace StateMachineReplication.StateProcessor {
             return null;
         }
 
-        public IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest) {
+        public IResponse VisitStartViewChange(StartViewChange startViewChange) {
+            if (this.replicaState.HandlerStateChanged.WaitOne((int)(Timeout.TIMEOUT_HEART_BEAT * 1.2)) &&
+                this.replicaState.State is ViewChangeMessageProcessor) {
+                return startViewChange.Accept(this.replicaState.State);
+            }
+            return null;
+        }
+
+        public IResponse VisitDoViewChange(DoViewChange doViewChange) {
+            lock (this.replicaState.State) {
+                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
+                    this.replicaState.ChangeToViewChange(doViewChange.ViewNumber, doViewChange.Configuration);
+                }
+            }
+            return doViewChange.Accept(this.replicaState.State);
+        }
+
+        public IResponse VisitStartChange(StartChange startChange) {
+            lock (this.replicaState.State) {
+                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
+                    this.replicaState.ChangeToViewChange(startChange.ViewNumber, startChange.Configuration);
+                }
+            }
+            return startChange.Accept(this.replicaState.State);
+        }
+
+        public IResponse VisitRecovery(Recovery recovery) {
+            if (this.replicaState.OpNumber < recovery.OpNumber) {
+                return null;
+            }
+
+            int count = this.replicaState.Logger.Count;
+
+            return new RecoveryResponse(
+                this.replicaState.ServerId,
+                this.replicaState.ViewNumber,
+                this.replicaState.OpNumber,
+                this.replicaState.CommitNumber,
+                this.replicaState.Logger.GetRange(recovery.OpNumber, count - recovery.OpNumber));
+        }
+
+        public IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest) {
             Uri[] viewConfiguration = this.replicaState.Configuration.Values.ToArray();
-            return new HandShakeResponse(Protocol.StateMachineReplication, this.replicaState.ViewNumber, viewConfiguration);
+            return new ClientHandShakeResponse(Protocol.StateMachineReplication, this.replicaState.ViewNumber, viewConfiguration);
         }
 
         private ProcessRequest RunProcessRequestProtocol(ClientRequest clientRequest, Executor clientExecutor) {
@@ -141,6 +176,7 @@ namespace StateMachineReplication.StateProcessor {
                     return ProcessRequest.DROP;
                 }
 
+                // Execute the requests in client's casual order
                 if (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
                     if (!this.replicaState.HandlersClient.ContainsKey(clientRequest.ClientId)) {
                         this.replicaState.HandlersClient.TryAdd(
@@ -174,23 +210,10 @@ namespace StateMachineReplication.StateProcessor {
             int opNumber = this.SendPrepareMessage(clientRequest);
             clientExecutor.OpNumber = opNumber;
 
-            // Update Client Table With status execution
-            this.replicaState.ClientTable[clientRequest.ClientId] =
-                new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientExecutor);
+            // Add request to queue
+            OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor);
 
-            // Signal blocked threads
-            this.replicaState.HandlersClient.TryGetValue(
-                clientRequest.ClientId,
-                out EventWaitHandle handler);
-            if (handler != null) {
-                handler.Set();
-                handler.Reset();
-            }
-            
-            // Add to execution queue
-            this.replicaState.ExecutionQueue.Add(clientExecutor);
-
-            // wait execution
+            // Wait execution
             clientExecutor.Executed.WaitOne();
 
             return ProcessRequest.LAST_EXECUTION;

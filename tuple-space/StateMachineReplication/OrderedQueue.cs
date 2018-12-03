@@ -1,7 +1,8 @@
-﻿using System.Collections.Concurrent;
-using System.Linq;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using MessageService;
+using MessageService.Serializable;
 
 namespace StateMachineReplication {
     public class OrderedQueue {
@@ -46,6 +47,24 @@ namespace StateMachineReplication {
         /// <returns>The element in the top of the queue</returns>
         public Executor Take() {
             return this.requestsToExecute.Take();
+        }
+
+        public static void AddRequestToQueue(ReplicaState replicaState, ClientRequest clientRequest, Executor clientExecutor) {
+            // Update Client Table With status execution
+            replicaState.ClientTable[clientRequest.ClientId] =
+                new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientExecutor);
+
+            // Signal blocked threads
+            replicaState.HandlersClient.TryGetValue(
+                clientRequest.ClientId,
+                out EventWaitHandle handler);
+            if (handler != null) {
+                handler.Set();
+                handler.Reset();
+            }
+
+            // Add to execution queue
+            replicaState.ExecutionQueue.Add(clientExecutor);
         }
     }
 }

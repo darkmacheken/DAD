@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,13 +12,19 @@ using MessageService.Visitor;
 using StateMachineReplication.StateProcessor;
 
 namespace StateMachineReplication {
-    public class ReplicaState {
-        public MessageServiceClient MessageServiceClient { get; }
-        public string ServerId { get; }
+    public enum State { INITIALIZATION, NORMAL, RECOVERING, VIEW_CHANGE }
 
-        public SortedDictionary<string, Uri> Configuration { get; }
-        public List<Uri> ReplicasUrl { get; }
-        public List<ClientRequest> Logger { get; }
+    public class ReplicaState {
+        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(ReplicaState));
+        public MessageServiceClient MessageServiceClient { get; }
+
+        // SMR protocol state
+        public string ServerId { get; }
+        public Uri myUrl { get; }
+
+        public SortedDictionary<string, Uri> Configuration { get; private set; }
+        public List<Uri> ReplicasUrl { get; private set; }
+        public List<ClientRequest> Logger { get; private set; }
         public OrderedQueue ExecutionQueue { get; }
         public Dictionary<string, Tuple<int, ClientResponse>> ClientTable { get; }
 
@@ -25,9 +32,7 @@ namespace StateMachineReplication {
         public IMessageSMRVisitor State { get; set; }
 
         // Attribute Atomic operations
-        private int viewNumber;
-        public int ViewNumber => this.viewNumber;
-        public int IncrementViewNumber() { return Interlocked.Increment(ref this.viewNumber); }
+        public int ViewNumber { get; private set; }
 
         private int opNumber;
         public int OpNumber => this.opNumber;
@@ -44,6 +49,7 @@ namespace StateMachineReplication {
         private readonly RequestsExecutor requestsExecutor;
 
         // Wait Handlers
+        public EventWaitHandle HandlerStateChanged { get; }
         public EventWaitHandle HandlersCommits { get; }
         public EventWaitHandle HandlersPrepare { get; }
         public ConcurrentDictionary<string, EventWaitHandle> HandlersClient { get; }
@@ -51,16 +57,18 @@ namespace StateMachineReplication {
         public ReplicaState(MessageServiceClient messageServiceClient, Uri url, string serverId) {
             this.MessageServiceClient = messageServiceClient;
             this.ServerId = serverId;
+            this.myUrl = url;
+
             this.Configuration = new SortedDictionary<string, Uri> { { this.ServerId, url } };
             this.ReplicasUrl = new List<Uri> {
                                                   new Uri("tcp://localhost:8081"),
                                                   new Uri("tcp://localhost:8082")
                                               };
             this.Leader = "1";
-            this.Logger= new List<ClientRequest>();
+            this.Logger = new List<ClientRequest>();
             this.ClientTable = new Dictionary<string, Tuple<int, ClientResponse>>();
             this.State = new NormalStateMessageProcessor(this, this.MessageServiceClient);
-            this.viewNumber = 0;
+            this.ViewNumber = 0;
             this.opNumber = 0;
             this.commitNumber = 0;
             this.ExecutionQueue = new OrderedQueue();
@@ -68,6 +76,7 @@ namespace StateMachineReplication {
             this.requestsExecutor = new RequestsExecutor(this, this.MessageServiceClient);
 
             // Handlers
+            this.HandlerStateChanged = new EventWaitHandle(false, EventResetMode.ManualReset);
             this.HandlersCommits = new EventWaitHandle(false, EventResetMode.ManualReset);
             this.HandlersPrepare = new EventWaitHandle(false, EventResetMode.ManualReset);
             this.HandlersClient = new ConcurrentDictionary<string, EventWaitHandle>();
@@ -85,6 +94,31 @@ namespace StateMachineReplication {
             return string.Equals(this.ServerId, this.Leader);
         }
 
+        public void SetNewConfiguration(SortedDictionary<string, Uri> configuration, Uri[] replicasUrl, int newViewNumber, string leader) {
+            this.Configuration = configuration;
+            this.ReplicasUrl = replicasUrl.ToList();
+            this.Leader = leader;
+            this.ViewNumber = newViewNumber;
+        }
+
+        public void ChangeToNormalState() {
+            this.State = new NormalStateMessageProcessor(this, this.MessageServiceClient);
+            this.HandlerStateChanged.Set();
+            this.HandlerStateChanged.Reset();
+        }
+
+        public void ChangeToViewChange(int newViewNumber, SortedDictionary<string, Uri> configuration) {
+            this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber, configuration);
+            this.HandlerStateChanged.Set();
+            this.HandlerStateChanged.Reset();
+        }
+
+        public void ChangeToRecoveryState() {
+            this.State = new RecoveryStateMessageProcessor(this, this.MessageServiceClient);
+            this.HandlerStateChanged.Set();
+            this.HandlerStateChanged.Reset();
+        }
+
         public string Status() {
             StringBuilder status = new StringBuilder();
             status.Append(
@@ -93,7 +127,7 @@ namespace StateMachineReplication {
                 $"State: {this.State} {Environment.NewLine}" +
                 $"Op Number: {this.opNumber} {Environment.NewLine}" +
                 $"Commit Number: {this.commitNumber} {Environment.NewLine}" +
-                $"View Number: {this.viewNumber} {Environment.NewLine}" +
+                $"View Number: {this.ViewNumber} {Environment.NewLine}" +
                 $"{"View Configuration:",10} {"Server ID",-10} {"URL",-10}  {Environment.NewLine}");
 
             foreach (KeyValuePair<string, Uri> entry in this.Configuration) {
@@ -105,6 +139,10 @@ namespace StateMachineReplication {
             status.Append(this.TupleSpace.Status());
 
             return status.ToString();
+        }
+
+        public void UpdateOpNumber() {
+            this.opNumber = this.Logger.Count;
         }
     }
 }

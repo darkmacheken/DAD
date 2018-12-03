@@ -78,6 +78,124 @@ namespace MessageService.Serializable {
         }
     }
 
+    [Serializable]
+    public class StartViewChange : IMessage {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public SortedDictionary<string,Uri> Configuration { get; set; }
+
+        public StartViewChange(string serverId, int viewNumber, SortedDictionary<string, Uri> configuration) {
+            ServerId = serverId;
+            ViewNumber = viewNumber;
+            Configuration = configuration;
+        }
+
+        public IResponse Accept(IMessageSMRVisitor visitor) {
+            return visitor.VisitStartViewChange(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            throw new NotImplementedException();
+        }
+    }
+
+    [Serializable]
+    public class StartViewChangeOk : IResponse {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public SortedDictionary<string, Uri> Configuration { get; set; }
+
+        public StartViewChangeOk(string serverId, int viewNumber, SortedDictionary<string, Uri> configuration) {
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.Configuration = configuration;
+        }
+    }
+
+    [Serializable]
+    public class DoViewChange : IMessage {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public int OldViewNumber { get; set; }
+        public SortedDictionary<string, Uri> Configuration { get; set; }
+
+        public DoViewChange(string serverId, int viewNumber, int oldViewNumber, SortedDictionary<string, Uri> configuration) {
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.OldViewNumber = oldViewNumber;
+            this.Configuration = configuration;
+        }
+
+        public IResponse Accept(IMessageSMRVisitor visitor) {
+            return visitor.VisitDoViewChange(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            throw new NotImplementedException();
+        }
+    }
+
+    [Serializable]
+    public class StartChange : IMessage {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public SortedDictionary<string, Uri> Configuration { get; set; }
+
+        public StartChange(string serverId, int viewNumber, SortedDictionary<string, Uri> configuration) {
+            ServerId = serverId;
+            ViewNumber = viewNumber;
+            Configuration = configuration;
+        }
+
+        public IResponse Accept(IMessageSMRVisitor visitor) {
+            return visitor.VisitStartChange(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            throw new NotImplementedException();
+        }
+    }
+
+    [Serializable]
+    public class Recovery : IMessage {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public int OpNumber { get; set; }
+        public int CommitNumber { get; set; }
+
+        public Recovery(string serverId, int viewNumber, int opNumber, int commitNumber) {
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.OpNumber = opNumber;
+            this.CommitNumber = commitNumber;
+        }
+
+        public IResponse Accept(IMessageSMRVisitor visitor) {
+            return visitor.VisitRecovery(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            throw new NotImplementedException();
+        }
+    }
+
+    [Serializable]
+    public class RecoveryResponse : IResponse {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public int OpNumber { get; set; }
+        public int CommitNumber { get; set; }
+        public List<ClientRequest> SuffixLogger { get; set; }
+
+        public RecoveryResponse(string serverId, int viewNumber, int opNumber, int commitNumber, List<ClientRequest> suffixLogger) {
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.OpNumber = opNumber;
+            this.CommitNumber = commitNumber;
+            this.SuffixLogger = suffixLogger;
+        }
+    }
+
     // XL ----------------------------------------------------------------------------------------------------------------
 
     [Serializable]
