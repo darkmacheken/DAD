@@ -103,33 +103,54 @@ namespace StateMachineReplication {
         }
 
         public void ChangeToNormalState() {
-            this.State = new NormalStateMessageProcessor(this, this.MessageServiceClient);
-            this.HandlerStateChanged.Set();
-            this.HandlerStateChanged.Reset();
+            lock (this.State) {
+                if (!(this.State is NormalStateMessageProcessor)) {
+                    this.State = new NormalStateMessageProcessor(this, this.MessageServiceClient);
+                    this.HandlerStateChanged.Set();
+                    this.HandlerStateChanged.Reset();
+                }
+            }
         }
 
         public void ChangeToViewChange(int newViewNumber, SortedDictionary<string, Uri> configuration) {
-            this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber, configuration);
-            this.HandlerStateChanged.Set();
-            this.HandlerStateChanged.Reset();
+            lock (this.State) {
+                if (!(this.State is ViewChangeMessageProcessor)) {
+                    this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber,
+                        configuration);
+                    this.HandlerStateChanged.Set();
+                    this.HandlerStateChanged.Reset();
+                }
+            }
         }
 
         public void ChangeToViewChange(StartChange startChange) {
-            this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, startChange);
-            this.HandlerStateChanged.Set();
-            this.HandlerStateChanged.Reset();
+            lock (this.State) {
+                if (!(this.State is ViewChangeMessageProcessor)) {
+                    this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, startChange);
+                    this.HandlerStateChanged.Set();
+                    this.HandlerStateChanged.Reset();
+                }
+            }
         }
 
         internal void ChangeToViewChange(DoViewChange doViewChange) {
-            this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, doViewChange);
-            this.HandlerStateChanged.Set();
-            this.HandlerStateChanged.Reset();
+            lock (this.State) {
+                if (!(this.State is ViewChangeMessageProcessor)) {
+                    this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, doViewChange);
+                    this.HandlerStateChanged.Set();
+                    this.HandlerStateChanged.Reset();
+                }
+            }
         }
 
         public void ChangeToRecoveryState() {
-            this.State = new RecoveryStateMessageProcessor(this, this.MessageServiceClient);
-            this.HandlerStateChanged.Set();
-            this.HandlerStateChanged.Reset();
+            lock (this.State) {
+                if (!(this.State is RecoveryStateMessageProcessor)) {
+                    this.State = new RecoveryStateMessageProcessor(this, this.MessageServiceClient);
+                    this.HandlerStateChanged.Set();
+                    this.HandlerStateChanged.Reset();
+                }
+            }
         }
 
         public string Status() {

@@ -61,7 +61,7 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitDoViewChange(DoViewChange doViewChange) {
-            lock (this.replicaState.State) {
+            lock (this) {
                 if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
                     this.replicaState.ChangeToViewChange(doViewChange);
                 }
@@ -71,7 +71,7 @@ namespace StateMachineReplication.StateProcessor {
 
         public IResponse VisitStartChange(StartChange startChange) {
             Log.Info($"Start Change issued from server {startChange.ServerId}");
-            lock (this.replicaState.State) {
+            lock (this) {
                 if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
                     this.replicaState.ChangeToViewChange(startChange);
                 }
@@ -100,7 +100,7 @@ namespace StateMachineReplication.StateProcessor {
             IResponses responses =
                 this.messageServiceClient.RequestMulticast(message, servers, servers.Length, Timeout.TIMEOUT_SERVER_HANDSHAKE);
 
-            IResponse[] filteredResponses = responses.ToArray().ToList()
+            IResponse[] filteredResponses = responses.ToArray().AsEnumerable()
                 .Where(response => response != null)
                 .ToArray();
 

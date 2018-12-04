@@ -59,7 +59,9 @@ namespace StateMachineReplication.StateProcessor {
 
             this.imTheLeader = startChange.Configuration.Values.ToArray()[0].Equals(this.replicaState.myUrl);
 
-            this.numberToWait = startChange.Configuration.Count / 2;
+            this.numberToWait = (startChange.Configuration.Count - 1) / 2;
+
+            this.messagesDoViewChange = 0;
 
             Log.Info("Changed to View Change State.");
         }
@@ -76,9 +78,12 @@ namespace StateMachineReplication.StateProcessor {
 
             this.imTheLeader = doViewChange.Configuration.Values.ToArray()[0].Equals(this.replicaState.myUrl);
 
-            this.numberToWait = doViewChange.Configuration.Count / 2;
+            this.numberToWait = (doViewChange.Configuration.Count - 1) / 2;
+
+            this.messagesDoViewChange = 0;
 
             Log.Info("Changed to View Change State.");
+
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
@@ -125,8 +130,7 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitDoViewChange(DoViewChange doViewChange) {
             if (this.imTheLeader &&
                 doViewChange.ViewNumber == this.viewNumber &&
-                ConfigurationUtils.CompareConfigurations(doViewChange.Configuration, this.configuration) &&
-                doViewChange.OldViewNumber == this.replicaState.ViewNumber) {
+                ConfigurationUtils.CompareConfigurations(doViewChange.Configuration, this.configuration)) {
                 Interlocked.Increment(ref this.messagesDoViewChange);
                 this.CheckNumberAndSetNewConfiguration();
             }
