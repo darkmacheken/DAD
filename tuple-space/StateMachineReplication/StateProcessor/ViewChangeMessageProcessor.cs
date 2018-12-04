@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
+using StateMachineReplication.Utils;
 using Timeout = MessageService.Timeout;
 
 namespace StateMachineReplication.StateProcessor {
@@ -36,8 +37,7 @@ namespace StateMachineReplication.StateProcessor {
 
             this.imTheLeader = this.configuration.Values.ToArray()[0].Equals(this.replicaState.myUrl);
 
-            Uri[] currentConfiguration = this.replicaState.ReplicasUrl.ToArray();
-            this.numberToWait = currentConfiguration.Length / 2;
+            this.numberToWait = this.replicaState.Configuration.Count / 2;
 
             this.messagesDoViewChange = 0;
 
@@ -57,7 +57,26 @@ namespace StateMachineReplication.StateProcessor {
             this.viewNumber = startChange.ViewNumber;
             this.configuration = startChange.Configuration;
 
-            this.imTheLeader = this.configuration.Values.ToArray()[0].Equals(this.replicaState.myUrl);
+            this.imTheLeader = startChange.Configuration.Values.ToArray()[0].Equals(this.replicaState.myUrl);
+
+            this.numberToWait = startChange.Configuration.Count / 2;
+
+            Log.Info("Changed to View Change State.");
+        }
+
+        public ViewChangeMessageProcessor(
+            MessageServiceClient messageServiceClient,
+            ReplicaState replicaState,
+            DoViewChange doViewChange) {
+            this.messageServiceClient = messageServiceClient;
+            this.replicaState = replicaState;
+
+            this.viewNumber = doViewChange.ViewNumber;
+            this.configuration = doViewChange.Configuration;
+
+            this.imTheLeader = doViewChange.Configuration.Values.ToArray()[0].Equals(this.replicaState.myUrl);
+
+            this.numberToWait = doViewChange.Configuration.Count / 2;
 
             Log.Info("Changed to View Change State.");
         }
@@ -96,17 +115,17 @@ namespace StateMachineReplication.StateProcessor {
 
         public IResponse VisitStartViewChange(StartViewChange startViewChange) {
             if (startViewChange.ViewNumber == this.viewNumber &&
-                startViewChange.Configuration.Equals(this.configuration)) {
+                ConfigurationUtils.CompareConfigurations(startViewChange.Configuration, this.configuration)) {
                 return new StartViewChangeOk(this.replicaState.ServerId, this.viewNumber, this.configuration);
             }
-
+            Log.Info("Received Start View Change that don't match.");
             return null;
         }
 
         public IResponse VisitDoViewChange(DoViewChange doViewChange) {
             if (this.imTheLeader &&
                 doViewChange.ViewNumber == this.viewNumber &&
-                doViewChange.Configuration.Equals(this.configuration) &&
+                ConfigurationUtils.CompareConfigurations(doViewChange.Configuration, this.configuration) &&
                 doViewChange.OldViewNumber == this.replicaState.ViewNumber) {
                 Interlocked.Increment(ref this.messagesDoViewChange);
                 this.CheckNumberAndSetNewConfiguration();
@@ -120,7 +139,7 @@ namespace StateMachineReplication.StateProcessor {
             Uri[] replicasUrl = this.configuration.Values
                 .Where(url => !url.Equals(this.replicaState.myUrl))
                 .ToArray();
-            this.replicaState.SetNewConfiguration(this.configuration, replicasUrl, this.viewNumber, this.replicaState.ServerId);
+            this.replicaState.SetNewConfiguration(this.configuration, replicasUrl, this.viewNumber);
             this.replicaState.ChangeToRecoveryState();
             return null;
         }
@@ -147,14 +166,17 @@ namespace StateMachineReplication.StateProcessor {
             IResponses responses = this.messageServiceClient.RequestMulticast(
                 message,
                 currentConfiguration,
-                currentConfiguration.Length - 1,
+                this.replicaState.Configuration.Count / 2,
                 (int)(Timeout.TIMEOUT_HEART_BEAT * 2));
+
             IResponse[] responsesVector = new List<IResponse>(responses.ToArray())
                 .Where(response => response != null)
                 .ToArray();
 
             // There was no quorum to accept the view change
             if (responsesVector.Length < this.numberToWait) {
+                Log.Info($"There was no quorum for view change. " +
+                         $"Just received {responsesVector.Length} from at least {this.numberToWait}");
                 this.replicaState.ChangeToNormalState();
                 return;
             }
@@ -162,18 +184,24 @@ namespace StateMachineReplication.StateProcessor {
             // In case I'm the leader, wait for f DoViewChange
             if (this.imTheLeader) {
                 this.CheckNumberAndSetNewConfiguration();
-                return;
+            } else {
+                // Else, send DoViewChange to leader
+                Uri leader = this.configuration.Values.ToArray()[0];
+                IMessage doViewMessage = new DoViewChange(
+                    this.replicaState.ServerId,
+                    this.viewNumber,
+                    this.replicaState.ViewNumber,
+                    this.configuration);
+
+                this.messageServiceClient.Request(doViewMessage, leader, -1);
             }
 
-            // Else, send DoViewChange to leader
-            Uri leader = this.configuration.Values.ToArray()[0];
-            IMessage doViewMessage = new DoViewChange(
-                this.replicaState.ServerId, 
-                this.viewNumber, 
-                this.replicaState.ViewNumber, 
-                this.configuration);
-
-            this.messageServiceClient.Request(doViewMessage, leader, -1);
+            Thread.Sleep(Timeout.TIMEOUT_HEART_BEAT);
+            if (this.Equals(this.replicaState.State)) {
+                // View Change was not successful, return to normal
+                Log.Info("View Change was not successful.");
+                this.replicaState.ChangeToNormalState();
+            }
         }
 
 
@@ -185,11 +213,11 @@ namespace StateMachineReplication.StateProcessor {
                     .ToArray();
 
                 IMessage message = new StartChange(this.replicaState.ServerId, this.viewNumber, this.configuration);
-                this.messageServiceClient.RequestMulticast(message, replicasUrl, 0, -1);
+                Task.Factory.StartNew(() => 
+                    this.messageServiceClient.RequestMulticast(message, replicasUrl, replicasUrl.Length, -1));
 
                 // Set new configuration
-                this.replicaState.SetNewConfiguration(this.configuration, replicasUrl, this.viewNumber,
-                    this.replicaState.ServerId);
+                this.replicaState.SetNewConfiguration(this.configuration, replicasUrl, this.viewNumber);
 
                 this.replicaState.ChangeToRecoveryState();
             }

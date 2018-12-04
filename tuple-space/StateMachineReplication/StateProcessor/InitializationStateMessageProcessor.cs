@@ -21,41 +21,7 @@ namespace StateMachineReplication.StateProcessor {
 
             Log.Info("Changed to Initialization State.");
 
-            Task.Factory.StartNew(() => {
-                Uri[] servers = System.IO.File.ReadAllLines(SERVERS_LIST).ToList()
-                    .ConvertAll<Uri>(server => new Uri(server))
-                    .Where(server => !server.Equals(this.replicaState.myUrl))
-                    .ToArray();
-
-                IMessage message = new ServerHandShakeRequest(this.replicaState.ServerId, Protocol.StateMachineReplication);
-                IResponses responses =
-                    this.messageServiceClient.RequestMulticast(message, servers, servers.Length - 1, 20000);
-
-                IResponse[] filteredResponses = responses.ToArray().ToList()
-                    .Where(response => response != null)
-                    .ToArray();
-
-                // I'm the first server
-                if (filteredResponses.Length == 0) {
-                    Log.Info("No servers found for handshake.");
-                    this.replicaState.SetNewConfiguration(
-                        new SortedDictionary<string, Uri> { { this.replicaState.ServerId, this.replicaState.myUrl } },
-                        new Uri[] { },
-                        0,
-                        this.replicaState.ServerId);
-                    this.replicaState.ChangeToNormalState();
-                    return;
-                }
-
-                // Else multicast joinView to everyone
-                Uri[] configuration = ((ServerHandShakeResponse) filteredResponses[0]).ViewConfiguration;
-                IMessage joinViewMessage = new JoinView(this.replicaState.ServerId, this.replicaState.myUrl);
-                this.messageServiceClient.RequestMulticast(
-                    joinViewMessage,
-                    configuration,
-                    0,
-                    -1);
-            });
+            Task.Factory.StartNew(this.InitProtocol);
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
@@ -97,7 +63,7 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitDoViewChange(DoViewChange doViewChange) {
             lock (this.replicaState.State) {
                 if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
-                    this.replicaState.ChangeToViewChange(doViewChange.ViewNumber, doViewChange.Configuration);
+                    this.replicaState.ChangeToViewChange(doViewChange);
                 }
             }
             return doViewChange.Accept(this.replicaState.State);
@@ -116,12 +82,47 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitRecovery(Recovery recovery) {
             return this.WaitNormalState(recovery);
         }
-
+        
         private IResponse WaitNormalState(IMessage message) {
             while (!(this.replicaState.State is NormalStateMessageProcessor)) {
                 this.replicaState.HandlerStateChanged.WaitOne();
             }
             return message.Accept(this.replicaState.State);
+        }
+
+        private void InitProtocol() {
+            Uri[] servers = System.IO.File.ReadAllLines(SERVERS_LIST).ToList()
+                .ConvertAll<Uri>(server => new Uri(server))
+                .Where(server => !server.Equals(this.replicaState.myUrl))
+                .ToArray();
+
+            IMessage message = new ServerHandShakeRequest(this.replicaState.ServerId, Protocol.StateMachineReplication);
+            IResponses responses =
+                this.messageServiceClient.RequestMulticast(message, servers, servers.Length, Timeout.TIMEOUT_SERVER_HANDSHAKE);
+
+            IResponse[] filteredResponses = responses.ToArray().ToList()
+                .Where(response => response != null)
+                .ToArray();
+
+            // I'm the first server
+            if (filteredResponses.Length == 0) {
+                Log.Info("No servers found for handshake.");
+                this.replicaState.SetNewConfiguration(
+                    new SortedDictionary<string, Uri> { { this.replicaState.ServerId, this.replicaState.myUrl } },
+                    new Uri[] { },
+                    0);
+                this.replicaState.ChangeToNormalState();
+                return;
+            }
+
+            // Else multicast joinView to everyone
+            Uri[] configuration = ((ServerHandShakeResponse)filteredResponses[0]).ViewConfiguration;
+            IMessage joinViewMessage = new JoinView(this.replicaState.ServerId, this.replicaState.myUrl);
+            this.messageServiceClient.RequestMulticast(
+                joinViewMessage,
+                configuration,
+                configuration.Length,
+                -1);
         }
 
         public override string ToString() {

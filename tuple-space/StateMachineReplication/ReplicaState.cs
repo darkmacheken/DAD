@@ -94,10 +94,10 @@ namespace StateMachineReplication {
             return string.Equals(this.ServerId, this.Leader);
         }
 
-        public void SetNewConfiguration(SortedDictionary<string, Uri> configuration, Uri[] replicasUrl, int newViewNumber, string leader) {
+        public void SetNewConfiguration(SortedDictionary<string, Uri> configuration, Uri[] replicasUrl, int newViewNumber) {
             this.Configuration = configuration;
             this.ReplicasUrl = replicasUrl.ToList();
-            this.Leader = leader;
+            this.Leader = this.Configuration.Keys.ToArray()[0];
             this.ViewNumber = newViewNumber;
             this.UpdateOpNumber();
         }
@@ -116,6 +116,12 @@ namespace StateMachineReplication {
 
         public void ChangeToViewChange(StartChange startChange) {
             this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, startChange);
+            this.HandlerStateChanged.Set();
+            this.HandlerStateChanged.Reset();
+        }
+
+        internal void ChangeToViewChange(DoViewChange doViewChange) {
+            this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, doViewChange);
             this.HandlerStateChanged.Set();
             this.HandlerStateChanged.Reset();
         }
