@@ -14,6 +14,8 @@ namespace StateMachineReplication.StateProcessor {
             this.messageServiceClient = messageServiceClient;
             this.replicaState = replicaState;
 
+            Log.Info("Changed to Recovery State.");
+
             // Start the protocol
             Task.Factory.StartNew(this.RecoveryProtocol);
         }
@@ -32,6 +34,14 @@ namespace StateMachineReplication.StateProcessor {
 
         public IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest) {
             return this.WaitNormalState(clientHandShakeRequest);
+        }
+
+        public IResponse VisitServerHandShakeRequest(ServerHandShakeRequest serverHandShakeRequest) {
+            return this.WaitNormalState(serverHandShakeRequest);
+        }
+
+        public IResponse VisitJoinView(JoinView joinView) {
+            return this.WaitNormalState(joinView);
         }
 
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
@@ -87,7 +97,7 @@ namespace StateMachineReplication.StateProcessor {
             IResponses responses = this.messageServiceClient.RequestMulticast(
                 message,
                 this.replicaState.ReplicasUrl.ToArray(),
-                this.replicaState.Configuration.Count / 2 + 1,
+                this.replicaState.Configuration.Count / 2,
                 -1);
 
             RecoveryResponse betterResponse = null;
@@ -95,6 +105,7 @@ namespace StateMachineReplication.StateProcessor {
                 RecoveryResponse recoveryResponse = (RecoveryResponse)response;
                 if (recoveryResponse.ViewNumber > this.replicaState.ViewNumber) {
                     // TODO: there is a higher view, join new view
+                    Log.Error("there is a higher view");
                     return;
                 }
 
@@ -115,15 +126,14 @@ namespace StateMachineReplication.StateProcessor {
                 this.replicaState.Logger.AddRange(betterResponse.SuffixLogger);
                 this.replicaState.UpdateOpNumber();
                 for (int i = this.replicaState.CommitNumber; i < betterResponse.CommitNumber; i++) {
-                    Task.Factory.StartNew(() => {
-                        ClientRequest clientRequest = this.replicaState.Logger[i];
-                        Executor clientExecutor = ExecutorFactory.Factory(clientRequest);
+                    ClientRequest clientRequest = this.replicaState.Logger[i];
+                    Executor clientExecutor = ExecutorFactory.Factory(clientRequest);
 
-                        // Add request to queue
-                        OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor);
-                    });
+                    // Add request to queue
+                    OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor);
                 }
             }
+            this.replicaState.ChangeToNormalState();
         }
 
         public override string ToString() {

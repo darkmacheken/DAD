@@ -9,6 +9,10 @@ namespace MessageService.Visitor {
         IResponse VisitReadRequest(ReadRequest readRequest);
       
         IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest);
+
+        IResponse VisitServerHandShakeRequest(ServerHandShakeRequest serverHandShakeRequest);
+
+        IResponse VisitJoinView(JoinView joinView);
     }
 
     public interface IMessageSMRVisitor : IMessageVisitor {

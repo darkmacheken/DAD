@@ -67,7 +67,7 @@ namespace StateMachineReplication {
             this.Leader = "1";
             this.Logger = new List<ClientRequest>();
             this.ClientTable = new Dictionary<string, Tuple<int, ClientResponse>>();
-            this.State = new NormalStateMessageProcessor(this, this.MessageServiceClient);
+            this.State = new InitializationStateMessageProcessor(this, this.MessageServiceClient);
             this.ViewNumber = 0;
             this.opNumber = 0;
             this.commitNumber = 0;
@@ -99,6 +99,7 @@ namespace StateMachineReplication {
             this.ReplicasUrl = replicasUrl.ToList();
             this.Leader = leader;
             this.ViewNumber = newViewNumber;
+            this.UpdateOpNumber();
         }
 
         public void ChangeToNormalState() {
@@ -109,6 +110,12 @@ namespace StateMachineReplication {
 
         public void ChangeToViewChange(int newViewNumber, SortedDictionary<string, Uri> configuration) {
             this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber, configuration);
+            this.HandlerStateChanged.Set();
+            this.HandlerStateChanged.Reset();
+        }
+
+        public void ChangeToViewChange(StartChange startChange) {
+            this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, startChange);
             this.HandlerStateChanged.Set();
             this.HandlerStateChanged.Reset();
         }

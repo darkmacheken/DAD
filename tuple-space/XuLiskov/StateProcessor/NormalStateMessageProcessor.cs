@@ -45,6 +45,14 @@ namespace XuLiskov.StateProcessor {
             return new ClientHandShakeResponse(Protocol.XuLiskov, this.replicaState.ViewNumber, viewConfiguration);
         }
 
+        public IResponse VisitServerHandShakeRequest(ServerHandShakeRequest serverHandShakeRequest) {
+            throw new NotImplementedException();
+        }
+
+        public IResponse VisitJoinView(JoinView joinView) {
+            throw new NotImplementedException();
+        }
+
         private IResponse ExecuteRequest(ClientRequest clientRequest, Executor clientExecutor) {
             ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(clientRequest, clientExecutor);
             if (runProcessRequestProtocol == ProcessRequest.DROP) {

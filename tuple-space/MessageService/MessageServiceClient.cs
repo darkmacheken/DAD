@@ -38,16 +38,18 @@ namespace MessageService {
         public IResponse Request(IMessage message, Uri url) {
             // block if frozen
             this.BlockFreezeState(message);
+            try {
+                Log.Debug($"Request called with parameters: message: {message}, url: {url}");
+                MessageServiceServer server = GetRemoteMessageService(url);
+                if (server != null) {
+                    return server.Request(message);
+                }
 
-            Log.Debug($"Request called with parameters: message: {message}, url: {url}");
-            MessageServiceServer server = GetRemoteMessageService(url);
-            if (server != null) {
-                return server.Request(message);
+                Log.Error($"Request: Could not resolve url {url.Host}:{url.Port}");
+                return null;
+            } catch (Exception) {
+                return null;
             }
-
-            Log.Error($"Request: Could not resolve url {url.Host}:{url.Port}");
-            return null;
-
         }
 
        public IResponse Request(IMessage message, Uri url, int timeout) {
@@ -100,6 +102,7 @@ namespace MessageService {
                 CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
                 // Create Task and run async
+                
                 Task<IResponse> task = Task<IResponse>.Factory.StartNew(() => {
                     using (cancellationTokenSource.Token.Register(() => Log.Debug("Task cancellation requested"))) {
                         return this.Request(message, url);
@@ -130,7 +133,7 @@ namespace MessageService {
             // Cancel task, we don't care anymore.
             cancellationTs.Cancel();
             Log.Error("Multicast Request: Timeout, abort thread request.");
-            return null;
+            return responses;
         }
 
         private static void GetResponses(

@@ -13,31 +13,32 @@ namespace PuppetMaster {
             ChannelServices.RegisterChannel(channel, false);
 
             IBasicVisitor interpreter = new Interpreter();
+            try {
+                if (args.Length == 1) {
+                    Console.WriteLine("Reading file...");
+                    Script script = Parser.Parse(System.IO.File.ReadAllLines(args[0]));
+                    script.Accept(interpreter);
+                }
+            } catch (Exception ex) {
+                if (ex is IncorrectCommandException) {
+                    Console.WriteLine(ex.Message);
+                } else {
+                    throw;
+                }
+            }
+
             while (true) {
                 try {
-                    if (args.Length == 1) {
-                        Console.WriteLine("Reading file...");
-                        Script script = Parser.Parse(System.IO.File.ReadAllLines(args[0]));
-                        script.Accept(interpreter);
-                        break;
-                    }
-
                     Console.Write(">>> ");
                     Parser.Parse(Console.ReadLine()).Accept(interpreter);
-
                 } catch (Exception ex) {
                     if (ex is IncorrectCommandException) {
                         Console.WriteLine(ex.Message);
-                        if (args.Length == 1) {
-                            break;
-                        }
                     } else {
                         throw;
                     }
                 }
             }
-            Console.WriteLine("Press enter do exit...");
-            Console.ReadLine();
         }
     }
 }

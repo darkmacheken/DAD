@@ -19,5 +19,9 @@ namespace MessageService {
         public int Count() {
             return this.responses.Count;
         }
+
+        public override string ToString() {
+            return responses.ToString();
+        }
     }
 }

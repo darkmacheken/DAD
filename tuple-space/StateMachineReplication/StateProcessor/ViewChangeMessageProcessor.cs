@@ -41,8 +41,25 @@ namespace StateMachineReplication.StateProcessor {
 
             this.messagesDoViewChange = 0;
 
+            Log.Info("Changed to View Change State.");
+
             // Start the view change protocol
             Task.Factory.StartNew(this.MulticastStartViewChange);
+        }
+
+        public ViewChangeMessageProcessor(
+            MessageServiceClient messageServiceClient,
+            ReplicaState replicaState,
+            StartChange startChange) {
+            this.messageServiceClient = messageServiceClient;
+            this.replicaState = replicaState;
+
+            this.viewNumber = startChange.ViewNumber;
+            this.configuration = startChange.Configuration;
+
+            this.imTheLeader = this.configuration.Values.ToArray()[0].Equals(this.replicaState.myUrl);
+
+            Log.Info("Changed to View Change State.");
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
@@ -59,6 +76,14 @@ namespace StateMachineReplication.StateProcessor {
 
         public IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest) {
             return this.WaitNormalState(clientHandShakeRequest);
+        }
+
+        public IResponse VisitServerHandShakeRequest(ServerHandShakeRequest serverHandShakeRequest) {
+            return this.WaitNormalState(serverHandShakeRequest);
+        }
+
+        public IResponse VisitJoinView(JoinView joinView) {
+            return this.WaitNormalState(joinView);
         }
 
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
@@ -83,21 +108,8 @@ namespace StateMachineReplication.StateProcessor {
                 doViewChange.ViewNumber == this.viewNumber &&
                 doViewChange.Configuration.Equals(this.configuration) &&
                 doViewChange.OldViewNumber == this.replicaState.ViewNumber) {
-
                 Interlocked.Increment(ref this.messagesDoViewChange);
-                if (this.messagesDoViewChange >= numberToWait) {
-                    // start change
-                    Uri[] replicasUrl = this.configuration.Values
-                        .Where(url => !url.Equals(this.replicaState.myUrl))
-                        .ToArray();
-
-                    IMessage message = new StartChange(this.replicaState.ServerId, this.viewNumber, this.configuration);
-                    this.messageServiceClient.RequestMulticast(message, replicasUrl, 0, -1);
-
-                    // Set new configuration
-                    this.replicaState.SetNewConfiguration(this.configuration, replicasUrl, this.viewNumber, this.replicaState.ServerId);
-                    this.replicaState.ChangeToRecoveryState();
-                }
+                this.CheckNumberAndSetNewConfiguration();
             }
       
             return null;
@@ -136,7 +148,7 @@ namespace StateMachineReplication.StateProcessor {
                 message,
                 currentConfiguration,
                 currentConfiguration.Length - 1,
-                (int)(Timeout.TIMEOUT_HEART_BEAT * 1.2));
+                (int)(Timeout.TIMEOUT_HEART_BEAT * 2));
             IResponse[] responsesVector = new List<IResponse>(responses.ToArray())
                 .Where(response => response != null)
                 .ToArray();
@@ -149,6 +161,7 @@ namespace StateMachineReplication.StateProcessor {
 
             // In case I'm the leader, wait for f DoViewChange
             if (this.imTheLeader) {
+                this.CheckNumberAndSetNewConfiguration();
                 return;
             }
 
@@ -161,6 +174,25 @@ namespace StateMachineReplication.StateProcessor {
                 this.configuration);
 
             this.messageServiceClient.Request(doViewMessage, leader, -1);
+        }
+
+
+        private void CheckNumberAndSetNewConfiguration() {
+            if (this.messagesDoViewChange >= this.numberToWait) {
+                // start change
+                Uri[] replicasUrl = this.configuration.Values
+                    .Where(url => !url.Equals(this.replicaState.myUrl))
+                    .ToArray();
+
+                IMessage message = new StartChange(this.replicaState.ServerId, this.viewNumber, this.configuration);
+                this.messageServiceClient.RequestMulticast(message, replicasUrl, 0, -1);
+
+                // Set new configuration
+                this.replicaState.SetNewConfiguration(this.configuration, replicasUrl, this.viewNumber,
+                    this.replicaState.ServerId);
+
+                this.replicaState.ChangeToRecoveryState();
+            }
         }
 
         public override string ToString() {

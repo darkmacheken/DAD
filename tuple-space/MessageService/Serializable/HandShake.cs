@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.Collections.Generic;
 using MessageService.Visitor;
 
 namespace MessageService.Serializable {
@@ -45,6 +45,61 @@ namespace MessageService.Serializable {
         public override string ToString() {
             return $"{{ ProtocolUsed: {this.ProtocolUsed}, View Number: {this.ViewNumber}," +
                    $" View Configuration: {this.ViewConfiguration}}}";
+        }
+    }
+
+    [Serializable]
+    public class ServerHandShakeRequest : IMessage {
+        public string ServerId { get; set; }
+        public Protocol ProtocolUsed { get; set; }
+
+        public ServerHandShakeRequest(string serverId, Protocol protocolUsed) {
+            this.ServerId = serverId;
+            this.ProtocolUsed = protocolUsed;
+        }
+
+        public IResponse Accept(IMessageVisitor visitor) {
+            return visitor.VisitServerHandShakeRequest(this);
+        }
+
+        public IResponse Accept(IMessageSMRVisitor visitor) {
+            return visitor.VisitServerHandShakeRequest(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitServerHandShakeRequest(this);
+        }
+    }
+
+    [Serializable]
+    public class ServerHandShakeResponse : IResponse {
+        public Uri[] ViewConfiguration { get; set; }
+
+        public ServerHandShakeResponse(Uri[] viewConfiguration) {
+            this.ViewConfiguration = viewConfiguration;
+        }
+    }
+
+    [Serializable]
+    public class JoinView : IMessage {
+        public string ServerId { get; set; }
+        public Uri Url { get; set; }
+
+        public JoinView(string serverId, Uri url) {
+            this.ServerId = serverId;
+            this.Url = url;
+        }
+
+        public IResponse Accept(IMessageVisitor visitor) {
+            return visitor.VisitJoinView(this);
+        }
+
+        public IResponse Accept(IMessageSMRVisitor visitor) {
+            return visitor.VisitJoinView(this);
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitJoinView(this);
         }
     }
 }

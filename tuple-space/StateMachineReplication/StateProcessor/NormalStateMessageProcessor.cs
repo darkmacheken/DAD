@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using MessageService;
@@ -19,6 +20,8 @@ namespace StateMachineReplication.StateProcessor {
         public NormalStateMessageProcessor(ReplicaState replicaState, MessageServiceClient messageServiceClient) {
             this.messageServiceClient = messageServiceClient;
             this.replicaState = replicaState;
+
+            Log.Info("Changed to Normal State.");
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
@@ -141,7 +144,7 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitStartChange(StartChange startChange) {
             lock (this.replicaState.State) {
                 if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
-                    this.replicaState.ChangeToViewChange(startChange.ViewNumber, startChange.Configuration);
+                    this.replicaState.ChangeToViewChange(startChange);
                 }
             }
             return startChange.Accept(this.replicaState.State);
@@ -165,6 +168,20 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest) {
             Uri[] viewConfiguration = this.replicaState.Configuration.Values.ToArray();
             return new ClientHandShakeResponse(Protocol.StateMachineReplication, this.replicaState.ViewNumber, viewConfiguration);
+        }
+
+        public IResponse VisitServerHandShakeRequest(ServerHandShakeRequest serverHandShakeRequest) {
+            return new ServerHandShakeResponse(this.replicaState.Configuration.Values.ToArray());
+        }
+
+        public IResponse VisitJoinView(JoinView joinView) {
+            Log.Info($"JoinView issued for server {joinView.ServerId}");
+            int newViewNumber = this.replicaState.ViewNumber + 1;
+            SortedDictionary<string, Uri> newConfiguration = new SortedDictionary<string, Uri>(this.replicaState.Configuration);
+            newConfiguration.Add(joinView.ServerId, joinView.Url);
+
+            this.replicaState.ChangeToViewChange(newViewNumber, newConfiguration);
+            return null;
         }
 
         private ProcessRequest RunProcessRequestProtocol(ClientRequest clientRequest, Executor clientExecutor) {

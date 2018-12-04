@@ -115,5 +115,6 @@ namespace MessageService.Serializable {
             this.ViewNumber = viewNumber;
             this.Result = result;
         }
+
     }
 }
