@@ -22,8 +22,7 @@ namespace Client.Visitor {
         public void VisitAdd(Add add) {
             ClientResponse clientResponse = (ClientResponse)this.messageServiceClient.Request(
                 new AddRequest(this.client.Id, this.client.GetRequestNumber(), add.Tuple),
-                new Uri("tcp://localhost:8080"));
-            //TODO: the url cannot be hard coded.
+                this.client.Leader);
 
             if (clientResponse != null) {
                 Console.WriteLine($"Added tuple {add.Tuple}");
@@ -37,7 +36,7 @@ namespace Client.Visitor {
             do {
                 clientResponse = (ClientResponse) this.messageServiceClient.Request(
                     new ReadRequest(this.client.Id, this.client.GetRequestNumber(), read.Tuple),
-                    new Uri("tcp://localhost:8080"));
+                    this.client.Leader);
 
                 if (clientResponse == null) {
                     break;
@@ -61,7 +60,7 @@ namespace Client.Visitor {
             do {
                 clientResponse = (ClientResponse)this.messageServiceClient.Request(
                     new ReadRequest(this.client.Id, this.client.GetRequestNumber(), take.Tuple),
-                    new Uri("tcp://localhost:8080"));
+                    this.client.Leader);
 
                 if (clientResponse == null) {
                     break;

@@ -6,7 +6,10 @@ namespace Client {
     public class Client {
         public string Id { get; }
         public Uri Url { get; }
-        public int ViewId { get; }
+
+        public int ViewNumber { get; set; }
+        public Uri[] ViewServers { get; set; }
+        public Uri Leader { get; set; }
 
         public int RequestNumber { get; set; }
 
@@ -20,7 +23,7 @@ namespace Client {
             this.parser = new Parser();
             this.SetScript(scriptFile);
             this.RequestNumber = 0;
-            this.ViewId = 0;
+            this.ViewNumber = 0;
         }
 
         public int GetRequestNumber() {

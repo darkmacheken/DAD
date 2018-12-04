@@ -60,11 +60,7 @@ namespace StateMachineReplication {
             this.myUrl = url;
 
             this.Configuration = new SortedDictionary<string, Uri> { { this.ServerId, url } };
-            this.ReplicasUrl = new List<Uri> {
-                                                  new Uri("tcp://localhost:8081"),
-                                                  new Uri("tcp://localhost:8082")
-                                              };
-            this.Leader = "1";
+            this.ReplicasUrl = new List<Uri>();
             this.Logger = new List<ClientRequest>();
             this.ClientTable = new Dictionary<string, Tuple<int, ClientResponse>>();
             this.State = new InitializationStateMessageProcessor(this, this.MessageServiceClient);
@@ -102,6 +98,14 @@ namespace StateMachineReplication {
             this.UpdateOpNumber();
         }
 
+        public void ChangeToInitializationState() {
+            lock (this.State) {
+                this.State = new InitializationStateMessageProcessor(this, this.MessageServiceClient);
+                this.HandlerStateChanged.Set();
+                this.HandlerStateChanged.Reset();
+            }
+        }
+
         public void ChangeToNormalState() {
             lock (this.State) {
                 if (!(this.State is NormalStateMessageProcessor)) {
@@ -115,8 +119,7 @@ namespace StateMachineReplication {
         public void ChangeToViewChange(int newViewNumber, SortedDictionary<string, Uri> configuration) {
             lock (this.State) {
                 if (!(this.State is ViewChangeMessageProcessor)) {
-                    this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber,
-                        configuration);
+                    this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber, configuration);
                     this.HandlerStateChanged.Set();
                     this.HandlerStateChanged.Reset();
                 }

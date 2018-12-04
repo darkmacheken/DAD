@@ -26,7 +26,7 @@ namespace Client.Visitor {
 
         public void VisitAdd(Add add) {
             AddRequest addRequest = new AddRequest(this.client.Id, this.client.GetRequestNumber(), add.Tuple);
-            this.messageServiceClient.RequestMulticast(addRequest, this.replicasUrls, 3, -1);
+            this.messageServiceClient.RequestMulticast(addRequest, this.replicasUrls, 3, -1, false);
             Console.WriteLine($"Added tuple {add.Tuple}");
         }
 
@@ -34,7 +34,7 @@ namespace Client.Visitor {
 
             while (true) {
                 ReadRequest readRequest = new ReadRequest(this.client.Id, this.client.GetRequestNumber(), read.Tuple);
-                IResponses responses = this.messageServiceClient.RequestMulticast(readRequest, this.replicasUrls, 3, -1);
+                IResponses responses = this.messageServiceClient.RequestMulticast(readRequest, this.replicasUrls, 3, -1, false);
 
                 foreach (IResponse response in responses.ToArray()) {
                     if (response != null && ((ClientResponse)response).Result != null) {
@@ -52,8 +52,8 @@ namespace Client.Visitor {
             string tupleToTake;
             while (true) {
                 GetAndLockRequest getAndLockRequest = new
-                    GetAndLockRequest(this.client.ViewId, this.client.Id, this.client.GetRequestNumber(), take.Tuple);
-                IResponses responses = this.messageServiceClient.RequestMulticast(getAndLockRequest, this.replicasUrls, 3, -1);
+                    GetAndLockRequest(this.client.ViewNumber, this.client.Id, this.client.GetRequestNumber(), take.Tuple);
+                IResponses responses = this.messageServiceClient.RequestMulticast(getAndLockRequest, this.replicasUrls, 3, -1, false);
                 List<List<string>> intersection = new List<List<string>>();
                 foreach (IResponse response in responses.ToArray()) {
                     if (response != null && ((GetAndLockResponse)response).Tuples.Count > 0) {
@@ -63,8 +63,8 @@ namespace Client.Visitor {
                 List<string> intersectTuples = ListUtils.IntersectLists(intersection);
                 if (intersectTuples.Count <= 0) {
                     UnlockRequest unlockRequest = new
-                        UnlockRequest(this.client.ViewId, this.client.Id, this.client.GetRequestNumber(), this.client.GetRequestNumber());
-                    this.messageServiceClient.RequestMulticast(unlockRequest, this.replicasUrls, 3, -1);
+                        UnlockRequest(this.client.ViewNumber, this.client.Id, this.client.GetRequestNumber(), this.client.GetRequestNumber());
+                    this.messageServiceClient.RequestMulticast(unlockRequest, this.replicasUrls, 3, -1, false);
                     Log.Debug("Take intersection is empty. Needs to be requested again.");
                     Thread.Sleep(100);
                 } else {
@@ -78,7 +78,7 @@ namespace Client.Visitor {
                 this.client.GetRequestNumber(),
                 this.client.GetRequestNumber(), 
                 tupleToTake);
-            this.messageServiceClient.RequestMulticast(takeRequest, this.replicasUrls, 3, -1);
+            this.messageServiceClient.RequestMulticast(takeRequest, this.replicasUrls, 3, -1, false);
             Console.WriteLine($"Take tuple = {tupleToTake}");
         }
         

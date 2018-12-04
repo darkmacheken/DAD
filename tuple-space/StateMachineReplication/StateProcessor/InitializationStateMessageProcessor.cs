@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
+using Timeout = MessageService.Timeout;
 
 namespace StateMachineReplication.StateProcessor {
     public class InitializationStateMessageProcessor : IMessageSMRVisitor {
@@ -22,6 +24,8 @@ namespace StateMachineReplication.StateProcessor {
             Log.Info("Changed to Initialization State.");
 
             Task.Factory.StartNew(this.InitProtocol);
+
+            Task.Factory.StartNew(this.StartTimeout);
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
@@ -98,7 +102,7 @@ namespace StateMachineReplication.StateProcessor {
 
             IMessage message = new ServerHandShakeRequest(this.replicaState.ServerId, Protocol.StateMachineReplication);
             IResponses responses =
-                this.messageServiceClient.RequestMulticast(message, servers, servers.Length, Timeout.TIMEOUT_SERVER_HANDSHAKE);
+                this.messageServiceClient.RequestMulticast(message, servers, 1, Timeout.TIMEOUT_SERVER_HANDSHAKE, true);
 
             IResponse[] filteredResponses = responses.ToArray().AsEnumerable()
                 .Where(response => response != null)
@@ -122,7 +126,17 @@ namespace StateMachineReplication.StateProcessor {
                 joinViewMessage,
                 configuration,
                 configuration.Length,
-                -1);
+                Timeout.TIMEOUT_INIT,
+                false);
+        }
+
+        private void StartTimeout() {
+            Thread.Sleep(Timeout.TIMEOUT_INIT);
+            if (this.Equals(this.replicaState.State)) {
+                // Initialization not successful
+                Log.Info("Initialization was not successful. Trying again.");
+                this.replicaState.ChangeToInitializationState();
+            }
         }
 
         public override string ToString() {

@@ -82,7 +82,8 @@ namespace MessageService {
             IMessage message,
             Uri[] urls,
             int numberResponsesToWait,
-            int timeout) {
+            int timeout,
+            bool notNull) {
             // block if frozen
             this.BlockFreezeState(message);
 
@@ -118,7 +119,7 @@ namespace MessageService {
             CancellationTokenSource cancellationTs = new CancellationTokenSource();
             Task getResponses = Task.Factory.StartNew(
                 () => { using (cancellationTs.Token.Register(() => { MessageServiceClient.CancelSubTasks(cancellations); })) {
-                        GetResponses(responses, numberResponsesToWait, tasks, cancellations);
+                        GetResponses(responses, numberResponsesToWait, tasks, cancellations, notNull);
                     }
                 },
                 cancellationTs.Token);
@@ -140,14 +141,22 @@ namespace MessageService {
             IResponses responses,
             int numberResponsesToWait, 
             List<Task<IResponse>> tasks, 
-            List<CancellationTokenSource> cancellations) {
+            List<CancellationTokenSource> cancellations,
+            bool notNull) {
 
             int countMessages = 0;
             while (countMessages < numberResponsesToWait) {
                 int index = Task.WaitAny(tasks.ToArray());
 
-                responses.Add(tasks[index].Result);
-                countMessages++;
+                if (notNull) {
+                    if (tasks[index].Result != null) {
+                        responses.Add(tasks[index].Result);
+                        countMessages++;
+                    }
+                } else {
+                    responses.Add(tasks[index].Result);
+                    countMessages++;
+                }
 
                 // cancel task
                 cancellations[index].Cancel();

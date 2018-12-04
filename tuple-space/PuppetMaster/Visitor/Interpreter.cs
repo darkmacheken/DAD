@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,13 +21,19 @@ namespace PuppetMaster.Visitor {
         public void VisitCrash(Crash crash) {
             Task.Factory.StartNew(() => {
                 IPuppetMasterService server = this.GetServerService(crash.ProcessName);
-                server.Crash();
+                try {
+                    server.Crash();
+                } catch (SocketException) {
+                    // It will receive socket exception if successful.
+                    this.servers.TryRemove(crash.ProcessName, out _);
+                }
             });
         }
 
         public void VisitCreateClient(CreateClient createClient) {
             Task.Factory.StartNew(() => {
                 if (this.clients.ContainsKey(createClient.Id)) {
+                    Console.WriteLine($"The client_id {createClient.Id} is already associated.");
                     return;
                 }
 
@@ -44,6 +51,7 @@ namespace PuppetMaster.Visitor {
         public void VisitCreateServer(CreateServer createServer) {
             Task.Factory.StartNew(() => {
                 if (this.servers.ContainsKey(createServer.Id)) {
+                    Console.WriteLine($"The server_id {createServer.Id} is already associated.");
                     return;
                 }
 

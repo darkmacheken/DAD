@@ -45,6 +45,9 @@ namespace StateMachineReplication.StateProcessor {
 
             // Start the view change protocol
             Task.Factory.StartNew(this.MulticastStartViewChange);
+
+            // Stay in this state for a timeout
+            Task.Factory.StartNew(this.StartTimeout);
         }
 
         public ViewChangeMessageProcessor(
@@ -64,6 +67,9 @@ namespace StateMachineReplication.StateProcessor {
             this.messagesDoViewChange = 0;
 
             Log.Info("Changed to View Change State.");
+
+            // Stay in this state for a timeout
+            Task.Factory.StartNew(this.StartTimeout);
         }
 
         public ViewChangeMessageProcessor(
@@ -84,6 +90,8 @@ namespace StateMachineReplication.StateProcessor {
 
             Log.Info("Changed to View Change State.");
 
+            // Stay in this state for a timeout
+            Task.Factory.StartNew(this.StartTimeout);
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
@@ -171,11 +179,10 @@ namespace StateMachineReplication.StateProcessor {
                 message,
                 currentConfiguration,
                 this.replicaState.Configuration.Count / 2,
-                (int)(Timeout.TIMEOUT_HEART_BEAT * 2));
+                (int)(Timeout.TIMEOUT_HEART_BEAT * 2),
+                true);
 
-            IResponse[] responsesVector = new List<IResponse>(responses.ToArray())
-                .Where(response => response != null)
-                .ToArray();
+            IResponse[] responsesVector = responses.ToArray();
 
             // There was no quorum to accept the view change
             if (responsesVector.Length < this.numberToWait) {
@@ -199,13 +206,6 @@ namespace StateMachineReplication.StateProcessor {
 
                 this.messageServiceClient.Request(doViewMessage, leader, -1);
             }
-
-            Thread.Sleep(Timeout.TIMEOUT_HEART_BEAT);
-            if (this.Equals(this.replicaState.State)) {
-                // View Change was not successful, return to normal
-                Log.Info("View Change was not successful.");
-                this.replicaState.ChangeToNormalState();
-            }
         }
 
 
@@ -218,12 +218,21 @@ namespace StateMachineReplication.StateProcessor {
 
                 IMessage message = new StartChange(this.replicaState.ServerId, this.viewNumber, this.configuration);
                 Task.Factory.StartNew(() => 
-                    this.messageServiceClient.RequestMulticast(message, replicasUrl, replicasUrl.Length, -1));
+                    this.messageServiceClient.RequestMulticast(message, replicasUrl, replicasUrl.Length, -1, false));
 
                 // Set new configuration
                 this.replicaState.SetNewConfiguration(this.configuration, replicasUrl, this.viewNumber);
 
                 this.replicaState.ChangeToRecoveryState();
+            }
+        }
+
+        private void StartTimeout() {
+            Thread.Sleep(Timeout.TIMEOUT_HEART_BEAT * 2);
+            if (this.Equals(this.replicaState.State)) {
+                // View Change was not successful, return to normal
+                Log.Info("View Change was not successful.");
+                this.replicaState.ChangeToNormalState();
             }
         }
 

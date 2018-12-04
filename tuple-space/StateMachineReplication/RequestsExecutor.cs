@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MessageService;
 using MessageService.Serializable;
 
@@ -101,7 +102,8 @@ namespace StateMachineReplication {
             CommitMessage commitMessage = new CommitMessage(this.replicaState.ServerId, viewNumber, commitNumber);
 
             // Don't wait for response
-            this.messageServiceClient.RequestMulticast(commitMessage, replicasUrls, 0, -1);
+            Task.Factory.StartNew(() => 
+                this.messageServiceClient.RequestMulticast(commitMessage, replicasUrls, replicasUrls.Length, -1, false));
         }
     }
 }

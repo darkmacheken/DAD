@@ -98,7 +98,8 @@ namespace StateMachineReplication.StateProcessor {
                 message,
                 this.replicaState.ReplicasUrl.ToArray(),
                 this.replicaState.Configuration.Count / 2,
-                -1);
+                -1,
+                true);
 
             RecoveryResponse betterResponse = null;
             foreach (IResponse response in responses.ToArray()) {

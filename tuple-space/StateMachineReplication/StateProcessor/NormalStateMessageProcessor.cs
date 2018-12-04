@@ -167,7 +167,11 @@ namespace StateMachineReplication.StateProcessor {
 
         public IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest) {
             Uri[] viewConfiguration = this.replicaState.Configuration.Values.ToArray();
-            return new ClientHandShakeResponse(Protocol.StateMachineReplication, this.replicaState.ViewNumber, viewConfiguration);
+            return new ClientHandShakeResponse(
+                Protocol.StateMachineReplication, 
+                this.replicaState.ViewNumber, 
+                viewConfiguration,
+                this.replicaState.Configuration[this.replicaState.Leader]);
         }
 
         public IResponse VisitServerHandShakeRequest(ServerHandShakeRequest serverHandShakeRequest) {
@@ -259,7 +263,7 @@ namespace StateMachineReplication.StateProcessor {
 
             // Wait for (Number backup replicas + the leader) / 2
             int f = (replicasUrls.Length + 1) / 2;
-            this.messageServiceClient.RequestMulticast(prepareMessage, replicasUrls, f, -1);
+            this.messageServiceClient.RequestMulticast(prepareMessage, replicasUrls, f, -1, true);
 
             return opNumber;
         }

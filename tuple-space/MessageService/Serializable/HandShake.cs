@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using MessageService.Visitor;
 
 namespace MessageService.Serializable {
@@ -12,10 +11,6 @@ namespace MessageService.Serializable {
     [Serializable]
     public class ClientHandShakeRequest : ClientRequest {
         public ClientHandShakeRequest(string clientId) : base(clientId) { }
-
-        public IResponse Accept(IMessageVisitor visitor) {
-            return visitor.VisitClientHandShakeRequest(this);
-        }
 
         public override string ToString() {
             return $"Handshake {{ Client ID: {this.ClientId} }}";
@@ -35,11 +30,19 @@ namespace MessageService.Serializable {
         public Protocol ProtocolUsed { get; set; }
         public int ViewNumber { get; set; }
         public Uri[] ViewConfiguration { get; set; }
+        public Uri Leader { get; set; }
 
         public ClientHandShakeResponse(Protocol protocolUsed, int viewNumber, Uri[] viewConfiguration) {
             this.ProtocolUsed = protocolUsed;
             this.ViewNumber = viewNumber;
             this.ViewConfiguration = viewConfiguration;
+        }
+
+        public ClientHandShakeResponse(Protocol protocolUsed, int viewNumber, Uri[] viewConfiguration, Uri leader) {
+            this.ProtocolUsed = protocolUsed;
+            this.ViewNumber = viewNumber;
+            this.ViewConfiguration = viewConfiguration;
+            this.Leader = leader;
         }
 
         public override string ToString() {
@@ -56,10 +59,6 @@ namespace MessageService.Serializable {
         public ServerHandShakeRequest(string serverId, Protocol protocolUsed) {
             this.ServerId = serverId;
             this.ProtocolUsed = protocolUsed;
-        }
-
-        public IResponse Accept(IMessageVisitor visitor) {
-            return visitor.VisitServerHandShakeRequest(this);
         }
 
         public IResponse Accept(IMessageSMRVisitor visitor) {

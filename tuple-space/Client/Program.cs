@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.Linq;
 using Client.Exceptions;
 using Client.Visitor;
 
@@ -10,6 +10,8 @@ namespace Client {
     public static class Program {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(Program));
 
+        private const string SERVERS_LIST = "..\\..\\..\\servers.txt";
+
         static void Main(string[] args) {
             try {
                 //TODO check arguments
@@ -18,10 +20,20 @@ namespace Client {
                 MessageServiceClient messageServiceClient = new MessageServiceClient(client.Url);
 
                 // Do the handshake
-                ClientHandShakeResponse response = (ClientHandShakeResponse)messageServiceClient.Request(
-                    new ClientHandShakeRequest(client.Id),
-                    new Uri("tcp://localhost:8080"));
+                Uri[] servers = System.IO.File.ReadAllLines(SERVERS_LIST).ToList()
+                    .ConvertAll<Uri>(server => new Uri(server))
+                    .ToArray();
 
+                IResponses responses = messageServiceClient.RequestMulticast(
+                    new ClientHandShakeRequest(client.Id),
+                    servers,
+                    1,
+                    -1,
+                    true);
+                ClientHandShakeResponse response = (ClientHandShakeResponse)responses.ToArray()[0];
+                client.ViewNumber = response.ViewNumber;
+                client.ViewServers = response.ViewConfiguration;
+                client.Leader = response.Leader;
                 
                 switch (response.ProtocolUsed) {
                     case Protocol.StateMachineReplication:
