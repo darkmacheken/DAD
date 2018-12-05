@@ -2,7 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Threading;
+using System.Threading.Tasks;
 using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
@@ -87,6 +89,9 @@ namespace StateMachineReplication.StateProcessor {
             }
             // It must wait for previous messages.
             while (this.replicaState.OpNumber != (prepareMessage.OpNumber - 1)) {
+                if (this.replicaState.OpNumber >= prepareMessage.OpNumber - 1) {
+                    return new PrepareOk(this.replicaState.ServerId, this.replicaState.ViewNumber, prepareMessage.OpNumber);
+                }
                 this.replicaState.HandlersPrepare.WaitOne();
             }
 
@@ -108,17 +113,20 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitCommitMessage(CommitMessage commitMessage) {
-            if (commitMessage.CommitNumber < this.replicaState.CommitNumber &&
-                commitMessage.ViewNumber != this.replicaState.ViewNumber &&
-                commitMessage.ServerId != this.replicaState.Leader) {
-                return null;
-            }
-            // It must confirm that it received the prepare message.
-            while (commitMessage.CommitNumber > this.replicaState.OpNumber) {
-                this.replicaState.HandlersCommits.WaitOne();
-            }
+            Task.Factory.StartNew(() => {
+                if (commitMessage.CommitNumber < this.replicaState.CommitNumber &&
+                    commitMessage.ViewNumber != this.replicaState.ViewNumber &&
+                    commitMessage.ServerId != this.replicaState.Leader) {
+                    return;
+                }
 
-            this.replicaState.ExecuteFromUntil(this.replicaState.CommitNumber, commitMessage.CommitNumber);
+                // It must confirm that it received the prepare message.
+                while (commitMessage.CommitNumber > this.replicaState.OpNumber) {
+                    this.replicaState.HandlersCommits.WaitOne();
+                }
+
+                this.replicaState.ExecuteFromUntil(this.replicaState.CommitNumber, commitMessage.CommitNumber);
+            });
             return null;
         }
 

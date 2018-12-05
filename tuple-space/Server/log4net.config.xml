@@ -6,7 +6,7 @@
   </appender>
 
   <root>
-    <level value="INFO" />
+    <level value="ALL" />
     <appender-ref ref="Console" />
   </root>
   <logger name="MessageService">
@@ -16,6 +16,6 @@
     <level value="DEBUG"/>
   </logger>
   <logger name="TupleSpace">
-    <level value="INFO"/>
+    <level value="OFF"/>
   </logger>
 </log4net>

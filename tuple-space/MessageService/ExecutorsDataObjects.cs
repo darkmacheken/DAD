@@ -82,7 +82,7 @@ namespace MessageService {
         private static readonly ConcurrentDictionary<ClientRequest, Executor> Executors = new ConcurrentDictionary<ClientRequest, Executor>();
 
         public static Executor Factory(ClientRequest clientRequest, int opNumber) {
-            Executor clientExecutor = null;
+            Executor clientExecutor;
             lock (clientRequest) {
                 if (Executors.TryGetValue(clientRequest, out clientExecutor)) {
                     return clientExecutor;
