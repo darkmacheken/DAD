@@ -125,14 +125,17 @@ namespace StateMachineReplication.StateProcessor {
 
                 this.replicaState.Logger.AddRange(betterResponse.SuffixLogger);
                 this.replicaState.UpdateOpNumber();
-                for (int i = this.replicaState.CommitNumber; i < this.replicaState.OpNumber; i++) {
-                    ClientRequest clientRequest = this.replicaState.Logger[i];
-                    Executor clientExecutor = ExecutorFactory.Factory(clientRequest, i + 1);
+                Task.Factory.StartNew(() => {
+                    for (int i = this.replicaState.CommitNumber; i < this.replicaState.OpNumber; i++) {
+                        ClientRequest clientRequest = this.replicaState.Logger[i];
+                        Executor clientExecutor = ExecutorFactory.Factory(clientRequest, i + 1);
 
-                    // Add request to queue
-                    Task.Factory.StartNew(() =>
-                        OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor));
-                }
+                        // Add request to queue
+
+                        OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor);
+                    }
+                });
+
             }
             Log.Debug($"Recovery Protocol: Changing to Normal State.");
             this.replicaState.ChangeToNormalState();

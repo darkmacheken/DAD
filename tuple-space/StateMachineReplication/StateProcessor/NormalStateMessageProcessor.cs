@@ -117,14 +117,8 @@ namespace StateMachineReplication.StateProcessor {
             while (commitMessage.CommitNumber > this.replicaState.OpNumber) {
                 this.replicaState.HandlersCommits.WaitOne();
             }
-            this.replicaState.ExecuteFromUntil(this.replicaState.CommitNumber, commitMessage.CommitNumber - 1);
-            ClientRequest request = this.replicaState.Logger[commitMessage.CommitNumber - 1];
-            Log.Debug($"Requesting {request} to Tuple Space.");
 
-            Executor requestExecutor = ExecutorFactory.Factory(request, commitMessage.CommitNumber);
-
-            // Add Request to Queue to be executed
-            OrderedQueue.AddRequestToQueue(this.replicaState, request, requestExecutor);
+            this.replicaState.ExecuteFromUntil(this.replicaState.CommitNumber, commitMessage.CommitNumber);
             return null;
         }
 

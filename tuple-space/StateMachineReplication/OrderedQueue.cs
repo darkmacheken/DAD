@@ -73,9 +73,16 @@ namespace StateMachineReplication {
             }
             
             lock (clientExecutor) {
-                // Add to execution queue
-                replicaState.ExecutionQueue.Add(clientRequest, clientExecutor);
-            }            
+                if (clientExecutor.AddedToQueue) {
+                    Log.Debug($"Request #{clientExecutor.OpNumber} is scheduled to join Execution Queue.");
+                    return;
+                }
+
+                clientExecutor.AddedToQueue = true;
+            }
+            // Add to execution queue
+            replicaState.ExecutionQueue.Add(clientRequest, clientExecutor);
+                     
         }
     }
 }

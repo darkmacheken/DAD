@@ -24,12 +24,14 @@ namespace MessageService {
         public new int RequestNumber { get; set; }
         public int OpNumber { get; set; }
         public AutoResetEvent Executed { get; set; }
+        public bool AddedToQueue { get; set; }
 
         protected Executor(ClientRequest clientRequest) {
             this.ClientId = clientRequest.ClientId;
             this.Tuple = clientRequest.Tuple;
             this.RequestNumber = clientRequest.RequestNumber;
             this.Executed = new AutoResetEvent(false);
+            this.AddedToQueue = false;
         }
 
         protected Executor(ClientRequest clientRequest, int opNumber) {
@@ -38,6 +40,7 @@ namespace MessageService {
             this.RequestNumber = clientRequest.RequestNumber;
             this.OpNumber = opNumber;
             this.Executed = new AutoResetEvent(false);
+            this.AddedToQueue = false;
         }
 
         public abstract void Execute(IExecutorVisitor visitor);

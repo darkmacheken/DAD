@@ -114,9 +114,15 @@ namespace StateMachineReplication {
         }
 
         public void ExecuteFromUntil(int begin, int end) {
-            for (int i = begin; i < end; i++) {
-                this.AddRequestToQueue(this.Logger[i], i + 1);
-            }
+            Task.Factory.StartNew(() => {
+                for (int i = begin; i < end; i++) {
+                    Executor clientExecutor = ExecutorFactory.Factory(this.Logger[i], i + 1);
+
+                    // Add request to queue
+                    Log.Debug($"Trying to add request #{opNumber} in the Execution Queue");
+                    OrderedQueue.AddRequestToQueue(this, this.Logger[i], clientExecutor);
+                }
+            });
         }
 
         public void SetNewConfiguration(SortedDictionary<string, Uri> configuration, Uri[] replicasUrl, int newViewNumber) {
@@ -214,14 +220,5 @@ namespace StateMachineReplication {
             this.HandlersPrepare.Set();
             this.HandlersPrepare.Reset();
         }
-
-        private void AddRequestToQueue(ClientRequest clientRequest, int opNumber) {
-            Executor clientExecutor = ExecutorFactory.Factory(clientRequest, opNumber);
-
-            // Add request to queue
-            Log.Debug($"Trying to add request #{opNumber} in the Execution Queue");
-            Task.Factory.StartNew(() => OrderedQueue.AddRequestToQueue(this, clientRequest, clientExecutor));
-        }
-        
     }
 }
