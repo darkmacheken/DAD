@@ -10,6 +10,7 @@ using MessageService.Serializable;
 using MessageService.Visitor;
 
 using StateMachineReplication.StateProcessor;
+using Timeout = MessageService.Timeout;
 
 namespace StateMachineReplication {
 
@@ -79,8 +80,11 @@ namespace StateMachineReplication {
             // Task that executes the requests.
             Task.Factory.StartNew(() => {
                 while (true) {
-                    Executor requestToExecute = this.ExecutionQueue.Take();
-                    requestToExecute.Execute(this.requestsExecutor);
+                    if (this.ExecutionQueue.TryTake(out Executor requestToExecute, Timeout.TIMEOUT_RECOVERY)) {
+                        requestToExecute.Execute(this.requestsExecutor);
+                    } else {
+                        this.ChangeToRecoveryState();
+                    }
                 }
             });
         }
@@ -185,7 +189,7 @@ namespace StateMachineReplication {
 
         public void ChangeToRecoveryState() {
             lock (this.State) {
-                if (!(this.State is RecoveryStateMessageProcessor)) {
+                if (this.State is NormalStateMessageProcessor) {
                     this.State = new RecoveryStateMessageProcessor(this, this.MessageServiceClient);
                     this.HandlerStateChanged.Set();
                     this.HandlerStateChanged.Reset();

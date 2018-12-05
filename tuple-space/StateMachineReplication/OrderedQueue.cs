@@ -58,11 +58,11 @@ namespace StateMachineReplication {
 
         /// <summary>
         /// Takes the element in the head of the queue. It BLOCKS until there is an element
-        /// in the queue.
+        /// in the queue or the <paramref name="timeout"/> expires.
         /// </summary>
         /// <returns>The element in the top of the queue</returns>
-        public Executor Take() {
-            return this.requestsToExecute.Take();
+        public bool TryTake(out Executor executor, int timeout) {
+            return this.requestsToExecute.TryTake(out executor, timeout);
         }
 
         public static void AddRequestToQueue(ReplicaState replicaState, ClientRequest clientRequest, Executor clientExecutor) {

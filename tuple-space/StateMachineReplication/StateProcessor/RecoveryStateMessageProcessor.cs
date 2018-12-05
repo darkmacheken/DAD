@@ -66,18 +66,7 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitRecovery(Recovery recovery) {
-            if (this.replicaState.OpNumber < recovery.OpNumber) {
-                return new RecoveryResponse(this.replicaState.ServerId);
-            }
-
-            int count = this.replicaState.Logger.Count;
-
-            return new RecoveryResponse(
-                this.replicaState.ServerId,
-                this.replicaState.ViewNumber,
-                this.replicaState.OpNumber,
-                this.replicaState.CommitNumber,
-                this.replicaState.Logger.GetRange(recovery.OpNumber, count - recovery.OpNumber));
+            return this.WaitNormalState(recovery);
         }
 
         private IResponse WaitNormalState(IMessage message) {
@@ -112,6 +101,11 @@ namespace StateMachineReplication.StateProcessor {
                         continue;
                     }
 
+                    if (recoveryResponse.ViewNumber > this.replicaState.ViewNumber) {
+                        this.replicaState.RestartInitializationState();
+                    }
+
+
                     if (recoveryResponse.OpNumber > betterResponse.OpNumber) {
                         betterResponse = recoveryResponse;
                     }
@@ -125,16 +119,7 @@ namespace StateMachineReplication.StateProcessor {
 
                 this.replicaState.Logger.AddRange(betterResponse.SuffixLogger);
                 this.replicaState.UpdateOpNumber();
-                Task.Factory.StartNew(() => {
-                    for (int i = this.replicaState.CommitNumber; i < this.replicaState.OpNumber; i++) {
-                        ClientRequest clientRequest = this.replicaState.Logger[i];
-                        Executor clientExecutor = ExecutorFactory.Factory(clientRequest, i + 1);
-
-                        // Add request to queue
-
-                        OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor);
-                    }
-                });
+                this.replicaState.ExecuteFromUntil(this.replicaState.CommitNumber, betterResponse.CommitNumber);
 
             }
             Log.Debug($"Recovery Protocol: Changing to Normal State.");
