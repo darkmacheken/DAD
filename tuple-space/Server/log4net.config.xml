@@ -13,7 +13,7 @@
     <level value="OFF"/>
   </logger>
   <logger name="StateMachineReplication">
-    <level value="DEBUG"/>
+    <level value="INFO"/>
   </logger>
   <logger name="TupleSpace">
     <level value="OFF"/>

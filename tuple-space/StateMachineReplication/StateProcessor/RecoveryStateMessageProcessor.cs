@@ -1,8 +1,10 @@
 ﻿using System.Security.Principal;
+using System.Threading;
 using System.Threading.Tasks;
 using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
+using Timeout = MessageService.Timeout;
 
 namespace StateMachineReplication.StateProcessor {
     public class RecoveryStateMessageProcessor : IMessageSMRVisitor {
@@ -19,6 +21,7 @@ namespace StateMachineReplication.StateProcessor {
 
             // Start the protocol
             Task.Factory.StartNew(this.RecoveryProtocol);
+
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
@@ -43,6 +46,11 @@ namespace StateMachineReplication.StateProcessor {
 
         public IResponse VisitJoinView(JoinView joinView) {
             return this.WaitNormalState(joinView);
+        }
+
+        public IResponse VisitHeartBeat(HeartBeat heartBeat) {
+            this.replicaState.UpdateHeartBeat(heartBeat.ServerId);
+            return null;
         }
 
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
@@ -91,20 +99,24 @@ namespace StateMachineReplication.StateProcessor {
                 -1,
                 true);
             Log.Debug($"Recovery Protocol: got {responses.Count()} responses.");
+            if (responses.Count() == 0) {
+                this.replicaState.ChangeToInitializationState();
+                return;
+            }
 
             RecoveryResponse betterResponse = null;
             foreach (IResponse response in responses.ToArray()) {
                 RecoveryResponse recoveryResponse = (RecoveryResponse)response;
+                if (recoveryResponse.ViewNumber > this.replicaState.ViewNumber) {
+                    this.replicaState.ChangeToInitializationState();
+                    return;
+                }
+
                 if (recoveryResponse.ViewNumber == this.replicaState.ViewNumber) {
                     if (betterResponse == null) {
                         betterResponse = recoveryResponse;
                         continue;
                     }
-
-                    if (recoveryResponse.ViewNumber > this.replicaState.ViewNumber) {
-                        this.replicaState.RestartInitializationState();
-                    }
-
 
                     if (recoveryResponse.OpNumber > betterResponse.OpNumber) {
                         betterResponse = recoveryResponse;

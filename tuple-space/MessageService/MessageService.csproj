@@ -48,6 +48,7 @@
     <Compile Include="Constants.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="ExecutorsDataObjects.cs" />
+    <Compile Include="Serializable\HeartBeat.cs" />
     <Compile Include="Serializable\HandShake.cs" />
     <Compile Include="Serializable\ProtocolMessages.cs" />
     <Compile Include="ServerMessageWrapper.cs" />

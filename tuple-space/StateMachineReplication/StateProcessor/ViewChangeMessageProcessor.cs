@@ -141,6 +141,11 @@ namespace StateMachineReplication.StateProcessor {
             return this.WaitNormalState(joinView);
         }
 
+        public IResponse VisitHeartBeat(HeartBeat heartBeat) {
+            this.replicaState.UpdateHeartBeat(heartBeat.ServerId);
+            return null;
+        }
+
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
             return this.WaitNormalState(prepareMessage);
         }
@@ -150,6 +155,9 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitStartViewChange(StartViewChange startViewChange) {
+            if (startViewChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
             if (startViewChange.ViewNumber == this.viewNumber &&
                 ConfigurationUtils.CompareConfigurations(startViewChange.Configuration, this.configuration)) {
                 return new StartViewChangeOk(this.replicaState.ServerId, this.viewNumber, this.configuration);
@@ -159,6 +167,9 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitDoViewChange(DoViewChange doViewChange) {
+            if (doViewChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
             if (this.imTheLeader &&
                 doViewChange.ViewNumber == this.viewNumber &&
                 ConfigurationUtils.CompareConfigurations(doViewChange.Configuration, this.configuration)) {
@@ -176,6 +187,9 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitStartChange(StartChange startChange) {
+            if (startChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
             // Set new configuration
             Uri[] replicasUrl = this.configuration.Values
                 .Where(url => !url.Equals(this.replicaState.myUrl))
@@ -214,7 +228,7 @@ namespace StateMachineReplication.StateProcessor {
                 message,
                 currentConfiguration,
                 this.replicaState.Configuration.Count / 2,
-                (int)(Timeout.TIMEOUT_HEART_BEAT * 2),
+                (int)(Timeout.TIMEOUT_VIEW_CHANGE),
                 true);
 
             IResponse[] responsesVector = responses.ToArray();
@@ -278,7 +292,7 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         private void StartTimeout() {
-            Thread.Sleep(Timeout.TIMEOUT_HEART_BEAT * 2);
+            Thread.Sleep((int) (Timeout.TIMEOUT_VIEW_CHANGE));
             if (this.Equals(this.replicaState.State)) {
                 // View Change was not successful, return to normal
                 Log.Debug("View Change was not successful.");

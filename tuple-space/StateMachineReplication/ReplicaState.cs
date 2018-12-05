@@ -48,6 +48,9 @@ namespace StateMachineReplication {
         // Request SMRExecutor
         private readonly RequestsExecutor requestsExecutor;
 
+        // HeartBeats
+        public SortedDictionary<string, DateTime> HeartBeats { get; set; }
+
         // Wait Handlers
         public EventWaitHandle HandlerStateChanged { get; }
         public EventWaitHandle HandlersCommits { get; }
@@ -70,6 +73,8 @@ namespace StateMachineReplication {
             this.ExecutionQueue = new OrderedQueue(this);
             this.TupleSpace = new TupleSpace.TupleSpace();
             this.requestsExecutor = new RequestsExecutor(this, this.MessageServiceClient);
+            this.HeartBeats = new SortedDictionary<string, DateTime>();
+
 
             // Handlers
             this.HandlerStateChanged = new EventWaitHandle(false, EventResetMode.ManualReset);
@@ -87,6 +92,42 @@ namespace StateMachineReplication {
                     }
                 }
             });
+
+            // Task that checks HeartBeats
+            Task.Factory.StartNew(() => {
+                while (true) {
+                    Thread.Sleep(Timeout.TIMEOUT_VIEW_CHANGE);
+                    foreach (KeyValuePair<string, DateTime> entry in this.HeartBeats) {
+                        if (entry.Value < DateTime.Now.AddMilliseconds(-Timeout.TIMEOUT_HEART_BEAT * 1.1)) {
+                            int newViewNumber = this.ViewNumber + 1;
+                            SortedDictionary<string, Uri> newConfiguration = new SortedDictionary<string, Uri>(
+                                this.Configuration
+                                    .Where(kvp => !kvp.Key.Equals(entry.Key))
+                                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
+
+                            Log.Debug($"Server {entry.Key} is presumably dead as the HeartBeat timeout expired.");
+                            this.ChangeToViewChange(newViewNumber, newConfiguration, true);
+                            break;
+                        }
+                    }
+                }
+            });
+
+            // Task that sends the HeartBeats
+            Task.Factory.StartNew(() => {
+                while (true) {
+                    Thread.Sleep(Timeout.TIMEOUT_HEART_BEAT);
+                    if (!(this.State is NormalStateMessageProcessor)) {
+                        continue;
+                    }
+                    Task.Factory.StartNew(() => this.MessageServiceClient.RequestMulticast(
+                        new HeartBeat(this.ServerId),
+                        this.ReplicasUrl.ToArray(),
+                        this.ReplicasUrl.Count,
+                        -1,
+                        false));
+                }
+            });
         }
 
         public bool IAmTheLeader() {
@@ -100,6 +141,7 @@ namespace StateMachineReplication {
             List<ClientRequest> logger,
             int opNumber,
             int commitNumber) {
+            Log.Warn($"Changing configuration: entering view #{newViewNumber}");
 
             this.Configuration = configuration;
             this.ReplicasUrl = replicasUrl.ToList();
@@ -107,6 +149,11 @@ namespace StateMachineReplication {
             this.ViewNumber = newViewNumber;
             this.Logger = logger;
             this.UpdateOpNumber();
+
+            // Create HeartBeat dictionary with entries at DateTime.Now
+            DateTime now = DateTime.Now;
+            this.HeartBeats = new SortedDictionary<string, DateTime>(
+                configuration.Where(kvp => kvp.Key != this.ServerId).ToDictionary(kvp => kvp.Key, kvp => now));
 
             // Execute all requests until the received commitNumber
             this.ExecuteFromUntil(this.commitNumber, commitNumber);
@@ -147,6 +194,16 @@ namespace StateMachineReplication {
             }
         }
 
+        public void ChangeToInitializationState() {
+            lock (this.State) {
+                if (!(this.State is InitializationStateMessageProcessor)) {
+                    this.State = new InitializationStateMessageProcessor(this, this.MessageServiceClient);
+                    this.HandlerStateChanged.Set();
+                    this.HandlerStateChanged.Reset();
+                }
+            }
+        }
+
         public void ChangeToNormalState() {
             lock (this.State) {
                 if (!(this.State is NormalStateMessageProcessor)) {
@@ -157,8 +214,16 @@ namespace StateMachineReplication {
             }
         }
 
-        public void ChangeToViewChange(int newViewNumber, SortedDictionary<string, Uri> configuration) {
+        public void ChangeToViewChange(int newViewNumber, SortedDictionary<string, Uri> configuration, bool onlyNormal) {
             lock (this.State) {
+                if (onlyNormal) {
+                    if (this.State is NormalStateMessageProcessor) {
+                        this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber, configuration);
+                        this.HandlerStateChanged.Set();
+                        this.HandlerStateChanged.Reset();
+                        return;
+                    }
+                }
                 if (!(this.State is ViewChangeMessageProcessor)) {
                     this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber, configuration);
                     this.HandlerStateChanged.Set();
@@ -223,6 +288,12 @@ namespace StateMachineReplication {
             this.opNumber = this.Logger.Count;
             this.HandlersPrepare.Set();
             this.HandlersPrepare.Reset();
+        }
+
+        public void UpdateHeartBeat(string serverId) {
+            if (this.HeartBeats.ContainsKey(serverId)) {
+                this.HeartBeats[serverId] = DateTime.Now;
+            }
         }
     }
 }

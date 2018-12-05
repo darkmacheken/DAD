@@ -52,6 +52,11 @@ namespace StateMachineReplication.StateProcessor {
             return this.WaitNormalState(joinView);
         }
 
+        public IResponse VisitHeartBeat(HeartBeat heartBeat) {
+            this.replicaState.UpdateHeartBeat(heartBeat.ServerId);
+            return null;
+        }
+
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
             return this.WaitNormalState(prepareMessage);
         }
@@ -65,6 +70,9 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitDoViewChange(DoViewChange doViewChange) {
+            if (doViewChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
             lock (this) {
                 if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
                     this.replicaState.ChangeToViewChange(doViewChange);
@@ -75,6 +83,9 @@ namespace StateMachineReplication.StateProcessor {
 
         public IResponse VisitStartChange(StartChange startChange) {
             Log.Info($"Start Change issued from server {startChange.ServerId}");
+            if (startChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
             lock (this) {
                 if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
                     this.replicaState.ChangeToViewChange(startChange);
@@ -104,9 +115,7 @@ namespace StateMachineReplication.StateProcessor {
             IResponses responses =
                 this.messageServiceClient.RequestMulticast(message, servers, 1, Timeout.TIMEOUT_SERVER_HANDSHAKE, true);
 
-            IResponse[] filteredResponses = responses.ToArray().AsEnumerable()
-                .Where(response => response != null)
-                .ToArray();
+            IResponse[] filteredResponses = responses.ToArray();
 
             // I'm the first server
             if (filteredResponses.Length == 0) {

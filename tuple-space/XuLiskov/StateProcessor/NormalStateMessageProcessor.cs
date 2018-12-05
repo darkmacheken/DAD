@@ -53,6 +53,10 @@ namespace XuLiskov.StateProcessor {
             throw new NotImplementedException();
         }
 
+        public IResponse VisitHeartBeat(HeartBeat heartBeat) {
+            throw new NotImplementedException();
+        }
+
         private IResponse ExecuteRequest(ClientRequest clientRequest, Executor clientExecutor) {
             ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(clientRequest, clientExecutor);
             if (runProcessRequestProtocol == ProcessRequest.DROP) {

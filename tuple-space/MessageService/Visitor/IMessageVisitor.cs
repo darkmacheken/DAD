@@ -13,6 +13,8 @@ namespace MessageService.Visitor {
         IResponse VisitServerHandShakeRequest(ServerHandShakeRequest serverHandShakeRequest);
 
         IResponse VisitJoinView(JoinView joinView);
+
+        IResponse VisitHeartBeat(HeartBeat heartBeat);
     }
 
     public interface IMessageSMRVisitor : IMessageVisitor {

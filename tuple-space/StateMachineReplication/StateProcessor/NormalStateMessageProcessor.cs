@@ -84,11 +84,18 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
+            if (prepareMessage.ViewNumber < this.replicaState.ViewNumber) {
+                return null;
+            }
             if (this.replicaState.OpNumber >= prepareMessage.OpNumber) {
                 return new PrepareOk(this.replicaState.ServerId, this.replicaState.ViewNumber, prepareMessage.OpNumber);
             }
+
             // It must wait for previous messages.
             while (this.replicaState.OpNumber != (prepareMessage.OpNumber - 1)) {
+                if (prepareMessage.ViewNumber < this.replicaState.ViewNumber) {
+                    return null;
+                }
                 if (this.replicaState.OpNumber >= prepareMessage.OpNumber - 1) {
                     return new PrepareOk(this.replicaState.ServerId, this.replicaState.ViewNumber, prepareMessage.OpNumber);
                 }
@@ -131,7 +138,7 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitStartViewChange(StartViewChange startViewChange) {
-            if (this.replicaState.HandlerStateChanged.WaitOne((int)(Timeout.TIMEOUT_HEART_BEAT * 1.2)) &&
+            if (this.replicaState.HandlerStateChanged.WaitOne(Timeout.TIMEOUT_VIEW_CHANGE) &&
                 this.replicaState.State is ViewChangeMessageProcessor) {
                 return startViewChange.Accept(this.replicaState.State);
             }
@@ -139,15 +146,21 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitDoViewChange(DoViewChange doViewChange) {
+            if (doViewChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
             lock (this.replicaState.State) {
                 if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
-                    this.replicaState.ChangeToViewChange(doViewChange.ViewNumber, doViewChange.Configuration);
+                    this.replicaState.ChangeToViewChange(doViewChange.ViewNumber, doViewChange.Configuration, false);
                 }
             }
             return doViewChange.Accept(this.replicaState.State);
         }
 
         public IResponse VisitStartChange(StartChange startChange) {
+            if (startChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
             lock (this.replicaState.State) {
                 if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
                     this.replicaState.ChangeToViewChange(startChange);
@@ -190,7 +203,12 @@ namespace StateMachineReplication.StateProcessor {
             SortedDictionary<string, Uri> newConfiguration = new SortedDictionary<string, Uri>(this.replicaState.Configuration);
             newConfiguration.Add(joinView.ServerId, joinView.Url);
 
-            this.replicaState.ChangeToViewChange(newViewNumber, newConfiguration);
+            this.replicaState.ChangeToViewChange(newViewNumber, newConfiguration, false);
+            return null;
+        }
+
+        public IResponse VisitHeartBeat(HeartBeat heartBeat) {
+            this.replicaState.UpdateHeartBeat(heartBeat.ServerId);
             return null;
         }
 
@@ -252,6 +270,7 @@ namespace StateMachineReplication.StateProcessor {
             int commitNumber;
             Uri[] replicasUrls;
 
+
             lock (this.replicaState) {
                 viewNumber = this.replicaState.ViewNumber;
                 commitNumber = this.replicaState.CommitNumber;
@@ -270,7 +289,7 @@ namespace StateMachineReplication.StateProcessor {
             // Wait for (Number backup replicas + the leader) / 2
             int f = this.replicaState.Configuration.Count / 2;
             this.messageServiceClient.RequestMulticast(prepareMessage, replicasUrls, f, -1, true);
-
+            
             return opNumber;
         }
 
