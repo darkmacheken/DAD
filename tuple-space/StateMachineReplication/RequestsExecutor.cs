@@ -24,6 +24,7 @@ namespace StateMachineReplication {
             int viewNumber = this.replicaState.ViewNumber;
 
             ClientResponse clientResponse = new ClientResponse(commitNumber, viewNumber, string.Empty);
+
             // update client table
             lock (this.replicaState) {
                 this.replicaState.ClientTable[addExecutor.ClientId] =
@@ -32,6 +33,8 @@ namespace StateMachineReplication {
 
             // Signal waiting thread that the execution is done
             addExecutor.Executed.Set();
+            this.replicaState.HandlersCommits.Set();
+            this.replicaState.HandlersCommits.Reset();
 
             // commit execution
             this.SendCommit(viewNumber, commitNumber);
@@ -60,6 +63,8 @@ namespace StateMachineReplication {
 
             // Signal waiting thread that the execution is done
             takeExecutor.Executed.Set();
+            this.replicaState.HandlersCommits.Set();
+            this.replicaState.HandlersCommits.Reset();
 
             // commit execution
             this.SendCommit(viewNumber, commitNumber);
@@ -87,12 +92,17 @@ namespace StateMachineReplication {
 
             // Signal waiting thread that the execution is done
             readExecutor.Executed.Set();
+            this.replicaState.HandlersCommits.Set();
+            this.replicaState.HandlersCommits.Reset();
 
             // commit execution
             this.SendCommit(viewNumber, commitNumber);
         }
 
         private void SendCommit(int viewNumber, int commitNumber) {
+            if (!this.replicaState.IAmTheLeader()) {
+                return;
+            }
             Uri[] replicasUrls;
 
             lock (this.replicaState) {

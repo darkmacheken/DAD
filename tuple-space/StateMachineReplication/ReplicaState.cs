@@ -12,7 +12,6 @@ using MessageService.Visitor;
 using StateMachineReplication.StateProcessor;
 
 namespace StateMachineReplication {
-    public enum State { INITIALIZATION, NORMAL, RECOVERING, VIEW_CHANGE }
 
     public class ReplicaState {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(ReplicaState));
@@ -67,7 +66,7 @@ namespace StateMachineReplication {
             this.ViewNumber = 0;
             this.opNumber = 0;
             this.commitNumber = 0;
-            this.ExecutionQueue = new OrderedQueue();
+            this.ExecutionQueue = new OrderedQueue(this);
             this.TupleSpace = new TupleSpace.TupleSpace();
             this.requestsExecutor = new RequestsExecutor(this, this.MessageServiceClient);
 
@@ -90,6 +89,36 @@ namespace StateMachineReplication {
             return string.Equals(this.ServerId, this.Leader);
         }
 
+        public void SetNewConfiguration(
+            SortedDictionary<string, Uri> configuration, 
+            Uri[] replicasUrl,
+            int newViewNumber, 
+            List<ClientRequest> logger,
+            int opNumber,
+            int commitNumber) {
+
+            this.Configuration = configuration;
+            this.ReplicasUrl = replicasUrl.ToList();
+            this.Leader = this.Configuration.Keys.ToArray()[0];
+            this.ViewNumber = newViewNumber;
+            this.Logger = logger;
+            this.UpdateOpNumber();
+
+            // Execute all requests until the received commitNumber
+            this.ExecuteFromUntil(this.commitNumber, commitNumber);
+
+            // Execute Missing and send Commit Message
+            if (this.IAmTheLeader()) {
+                this.ExecuteFromUntil(commitNumber, opNumber);
+            }
+        }
+
+        public void ExecuteFromUntil(int begin, int end) {
+            for (int i = begin; i < end; i++) {
+                this.AddRequestToQueue(this.Logger[i], i + 1);
+            }
+        }
+
         public void SetNewConfiguration(SortedDictionary<string, Uri> configuration, Uri[] replicasUrl, int newViewNumber) {
             this.Configuration = configuration;
             this.ReplicasUrl = replicasUrl.ToList();
@@ -98,11 +127,13 @@ namespace StateMachineReplication {
             this.UpdateOpNumber();
         }
 
-        public void ChangeToInitializationState() {
+        public void RestartInitializationState() {
             lock (this.State) {
-                this.State = new InitializationStateMessageProcessor(this, this.MessageServiceClient);
-                this.HandlerStateChanged.Set();
-                this.HandlerStateChanged.Reset();
+                if (this.State is InitializationStateMessageProcessor) {
+                    this.State = new InitializationStateMessageProcessor(this, this.MessageServiceClient);
+                    this.HandlerStateChanged.Set();
+                    this.HandlerStateChanged.Reset();
+                }
             }
         }
 
@@ -136,7 +167,7 @@ namespace StateMachineReplication {
             }
         }
 
-        internal void ChangeToViewChange(DoViewChange doViewChange) {
+        public void ChangeToViewChange(DoViewChange doViewChange) {
             lock (this.State) {
                 if (!(this.State is ViewChangeMessageProcessor)) {
                     this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, doViewChange);
@@ -180,6 +211,17 @@ namespace StateMachineReplication {
 
         public void UpdateOpNumber() {
             this.opNumber = this.Logger.Count;
+            this.HandlersPrepare.Set();
+            this.HandlersPrepare.Reset();
         }
+
+        private void AddRequestToQueue(ClientRequest clientRequest, int opNumber) {
+            Executor clientExecutor = ExecutorFactory.Factory(clientRequest, opNumber);
+
+            // Add request to queue
+            Log.Debug($"Trying to add request #{opNumber} in the Execution Queue");
+            Task.Factory.StartNew(() => OrderedQueue.AddRequestToQueue(this, clientRequest, clientExecutor));
+        }
+        
     }
 }

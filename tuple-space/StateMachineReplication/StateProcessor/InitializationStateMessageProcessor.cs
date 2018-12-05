@@ -135,7 +135,7 @@ namespace StateMachineReplication.StateProcessor {
             if (this.Equals(this.replicaState.State)) {
                 // Initialization not successful
                 Log.Info("Initialization was not successful. Trying again.");
-                this.replicaState.ChangeToInitializationState();
+                this.replicaState.RestartInitializationState();
             }
         }
 

@@ -31,7 +31,7 @@ namespace StateMachineReplication.StateProcessor {
                 return null;
             }
 
-            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(addRequest, new AddExecutor(addRequest));
+            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(addRequest);
             if (runProcessRequestProtocol == ProcessRequest.DROP) {
                 return null;
             }
@@ -50,7 +50,7 @@ namespace StateMachineReplication.StateProcessor {
                 return null;
             }
 
-            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(takeRequest, new TakeExecutor(takeRequest));
+            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(takeRequest);
             if (runProcessRequestProtocol == ProcessRequest.DROP) {
                 return null;
             }
@@ -69,7 +69,7 @@ namespace StateMachineReplication.StateProcessor {
                 return null;
             }
 
-            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(readRequest, new ReadExecutor(readRequest));
+            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(readRequest);
             if (runProcessRequestProtocol == ProcessRequest.DROP) {
                 return null;
             }
@@ -82,6 +82,9 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
+            if (this.replicaState.OpNumber >= prepareMessage.OpNumber) {
+                return new PrepareOk(this.replicaState.ServerId, this.replicaState.ViewNumber, prepareMessage.OpNumber);
+            }
             // It must wait for previous messages.
             while (this.replicaState.OpNumber != (prepareMessage.OpNumber - 1)) {
                 this.replicaState.HandlersPrepare.WaitOne();
@@ -105,22 +108,23 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitCommitMessage(CommitMessage commitMessage) {
+            if (commitMessage.CommitNumber < this.replicaState.CommitNumber &&
+                commitMessage.ViewNumber != this.replicaState.ViewNumber &&
+                commitMessage.ServerId != this.replicaState.Leader) {
+                return null;
+            }
             // It must confirm that it received the prepare message.
             while (commitMessage.CommitNumber > this.replicaState.OpNumber) {
                 this.replicaState.HandlersCommits.WaitOne();
             }
-
-            ClientRequest request = this.replicaState.Logger[commitMessage.CommitNumber];
+            this.replicaState.ExecuteFromUntil(this.replicaState.CommitNumber, commitMessage.CommitNumber - 1);
+            ClientRequest request = this.replicaState.Logger[commitMessage.CommitNumber - 1];
             Log.Debug($"Requesting {request} to Tuple Space.");
 
-            Executor requestExecutor = ExecutorFactory.Factory(request);
-
-            // Update Client Table
-            this.replicaState.ClientTable[request.ClientId] =
-                new Tuple<int, ClientResponse>(request.RequestNumber, requestExecutor);
+            Executor requestExecutor = ExecutorFactory.Factory(request, commitMessage.CommitNumber);
 
             // Add Request to Queue to be executed
-            this.replicaState.ExecutionQueue.Add(requestExecutor);
+            OrderedQueue.AddRequestToQueue(this.replicaState, request, requestExecutor);
             return null;
         }
 
@@ -152,7 +156,7 @@ namespace StateMachineReplication.StateProcessor {
 
         public IResponse VisitRecovery(Recovery recovery) {
             if (this.replicaState.OpNumber < recovery.OpNumber) {
-                return null;
+                return new RecoveryResponse(this.replicaState.ServerId);
             }
 
             int count = this.replicaState.Logger.Count;
@@ -188,7 +192,7 @@ namespace StateMachineReplication.StateProcessor {
             return null;
         }
 
-        private ProcessRequest RunProcessRequestProtocol(ClientRequest clientRequest, Executor clientExecutor) {
+        private ProcessRequest RunProcessRequestProtocol(ClientRequest clientRequest) {
             if (this.replicaState.ClientTable.TryGetValue(clientRequest.ClientId, out Tuple<int, ClientResponse> clientResponse)) {
                 // Key is in the dictionary
                 if (clientResponse == null || clientResponse.Item1 < 0 ||
@@ -229,7 +233,7 @@ namespace StateMachineReplication.StateProcessor {
 
             // Send Prepare Message and waits for f replies. opNumber is the order we agreed upon.
             int opNumber = this.SendPrepareMessage(clientRequest);
-            clientExecutor.OpNumber = opNumber;
+            Executor clientExecutor = ExecutorFactory.Factory(clientRequest, opNumber);
 
             // Add request to queue
             OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor);
@@ -262,7 +266,7 @@ namespace StateMachineReplication.StateProcessor {
                 commitNumber);
 
             // Wait for (Number backup replicas + the leader) / 2
-            int f = (replicasUrls.Length + 1) / 2;
+            int f = this.replicaState.Configuration.Count / 2;
             this.messageServiceClient.RequestMulticast(prepareMessage, replicasUrls, f, -1, true);
 
             return opNumber;

@@ -59,7 +59,7 @@ namespace Client.Visitor {
             ClientResponse clientResponse;
             do {
                 clientResponse = (ClientResponse)this.messageServiceClient.Request(
-                    new ReadRequest(this.client.Id, this.client.GetRequestNumber(), take.Tuple),
+                    new TakeRequest(this.client.Id, this.client.GetRequestNumber(), take.Tuple), 
                     this.client.Leader);
 
                 if (clientResponse == null) {

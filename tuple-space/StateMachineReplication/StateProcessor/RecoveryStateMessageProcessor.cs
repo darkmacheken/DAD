@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Security.Principal;
+using System.Threading.Tasks;
 using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
@@ -66,7 +67,7 @@ namespace StateMachineReplication.StateProcessor {
 
         public IResponse VisitRecovery(Recovery recovery) {
             if (this.replicaState.OpNumber < recovery.OpNumber) {
-                return null;
+                return new RecoveryResponse(this.replicaState.ServerId);
             }
 
             int count = this.replicaState.Logger.Count;
@@ -100,16 +101,11 @@ namespace StateMachineReplication.StateProcessor {
                 this.replicaState.Configuration.Count / 2,
                 -1,
                 true);
+            Log.Debug($"Recovery Protocol: got {responses.Count()} responses.");
 
             RecoveryResponse betterResponse = null;
             foreach (IResponse response in responses.ToArray()) {
                 RecoveryResponse recoveryResponse = (RecoveryResponse)response;
-                if (recoveryResponse.ViewNumber > this.replicaState.ViewNumber) {
-                    // TODO: there is a higher view, join new view
-                    Log.Error("there is a higher view");
-                    return;
-                }
-
                 if (recoveryResponse.ViewNumber == this.replicaState.ViewNumber) {
                     if (betterResponse == null) {
                         betterResponse = recoveryResponse;
@@ -124,16 +120,21 @@ namespace StateMachineReplication.StateProcessor {
 
             if (betterResponse != null &&
                 betterResponse.OpNumber > this.replicaState.OpNumber) {
+                Log.Debug($"Better Response: OpNumber = {betterResponse.OpNumber}, " +
+                          $"CommitNumber = {betterResponse.CommitNumber} ({this.replicaState.CommitNumber})");
+
                 this.replicaState.Logger.AddRange(betterResponse.SuffixLogger);
                 this.replicaState.UpdateOpNumber();
-                for (int i = this.replicaState.CommitNumber; i < betterResponse.CommitNumber; i++) {
+                for (int i = this.replicaState.CommitNumber; i < this.replicaState.OpNumber; i++) {
                     ClientRequest clientRequest = this.replicaState.Logger[i];
-                    Executor clientExecutor = ExecutorFactory.Factory(clientRequest);
+                    Executor clientExecutor = ExecutorFactory.Factory(clientRequest, i + 1);
 
                     // Add request to queue
-                    OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor);
+                    Task.Factory.StartNew(() =>
+                        OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor));
                 }
             }
+            Log.Debug($"Recovery Protocol: Changing to Normal State.");
             this.replicaState.ChangeToNormalState();
         }
 

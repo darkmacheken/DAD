@@ -6,38 +6,54 @@ using MessageService.Serializable;
 
 namespace StateMachineReplication {
     public class OrderedQueue {
+        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(OrderedQueue));
+
         private readonly BlockingCollection<Executor> requestsToExecute;
-        private readonly ConcurrentDictionary<string,AutoResetEvent> handlers;
+        private readonly EventWaitHandle handler;
         private int lastOpNumber;
 
-        public OrderedQueue() {
-            requestsToExecute = new BlockingCollection<Executor>();
-            handlers = new ConcurrentDictionary<string, AutoResetEvent>();
-            lastOpNumber = 0;
+        private readonly ReplicaState replicaState;
+
+        public OrderedQueue(ReplicaState replicaState) {
+            this.requestsToExecute = new BlockingCollection<Executor>();
+            this.handler = new EventWaitHandle(false, EventResetMode.ManualReset);
+            this.lastOpNumber = 0;
+            this.replicaState = replicaState;
         }
         
         /// <summary>
-        /// Adds an element in the queue. It BLOCKS while the op number of the element isn't the
-        /// next op number of the last added element.
+        /// Adds an element in the queue. It BLOCKS <see langword="while"/> the op number of the element isn't the
+        /// next op number of the last added element. If less it returns.
         /// </summary>
         /// <param name="requestToExecute">The element to add.</param>
-        public void Add(Executor requestToExecute) {
-            AutoResetEvent myHandler = new AutoResetEvent(false);
-
-            handlers.TryAdd(requestToExecute.ClientId, myHandler);
-
-            while (lastOpNumber != requestToExecute.OpNumber - 1) {
-                myHandler.WaitOne();
+        public void Add(ClientRequest clientRequest, Executor requestToExecute) {
+            if (requestToExecute.OpNumber <= this.lastOpNumber) {
+                return;
             }
 
-            requestsToExecute.Add(requestToExecute);
+            Log.Debug($"Execution Queue: Request OpNumber #{requestToExecute.OpNumber}, LastOpNumber #{lastOpNumber}.");
+            while (this.lastOpNumber != requestToExecute.OpNumber - 1) {
+                this.handler.WaitOne();
+            }
+
+            this.requestsToExecute.Add(requestToExecute);
             this.lastOpNumber = requestToExecute.OpNumber;
 
+            // Update Client Table With status execution
+            replicaState.ClientTable[clientRequest.ClientId] =
+                new Tuple<int, ClientResponse>(clientRequest.RequestNumber, requestToExecute);
+
+            
+            Log.Debug($"Added request #{requestToExecute.OpNumber} to Execution Queue.");
+
             // notify all waiting threads
-            foreach (AutoResetEvent eventHandler in this.handlers.Values) {
-                eventHandler.Set();
+            this.handler.Set();
+            this.handler.Reset();
+            replicaState.HandlersClient.TryGetValue(clientRequest.ClientId, out EventWaitHandle handler);
+            if (handler != null) {
+                handler.Set();
+                handler.Reset();
             }
-            this.handlers.TryRemove(requestToExecute.ClientId, out myHandler);
         }
 
         /// <summary>
@@ -50,21 +66,16 @@ namespace StateMachineReplication {
         }
 
         public static void AddRequestToQueue(ReplicaState replicaState, ClientRequest clientRequest, Executor clientExecutor) {
-            // Update Client Table With status execution
-            replicaState.ClientTable[clientRequest.ClientId] =
-                new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientExecutor);
-
-            // Signal blocked threads
-            replicaState.HandlersClient.TryGetValue(
-                clientRequest.ClientId,
-                out EventWaitHandle handler);
-            if (handler != null) {
-                handler.Set();
-                handler.Reset();
+            if (!replicaState.ClientTable.TryGetValue(clientRequest.ClientId, out Tuple<int, ClientResponse> clientTableCell) || 
+                clientTableCell == null) {
+                // Not in dictionary... Add with value as null
+                replicaState.ClientTable.Add(clientRequest.ClientId, new Tuple<int, ClientResponse>(-1, null));
             }
-
-            // Add to execution queue
-            replicaState.ExecutionQueue.Add(clientExecutor);
+            
+            lock (clientExecutor) {
+                // Add to execution queue
+                replicaState.ExecutionQueue.Add(clientRequest, clientExecutor);
+            }            
         }
     }
 }

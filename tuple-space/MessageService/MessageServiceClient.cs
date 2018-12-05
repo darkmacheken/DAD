@@ -87,11 +87,15 @@ namespace MessageService {
             // block if frozen
             this.BlockFreezeState(message);
 
+            if (urls.Length == 0) {
+                return new Responses();
+            }
+
             Log.Debug($"Multicast Request called with parameters: message: {message}, url: {urls},"
                       + $"numberResponsesToWait: {numberResponsesToWait}, timeout: {timeout}");
 
             if (numberResponsesToWait > urls.Length) {
-                return null;
+                return new Responses();
             } else if (numberResponsesToWait < 0) {
                 numberResponsesToWait = urls.Length;
             }
@@ -110,8 +114,14 @@ namespace MessageService {
                     }
                 }, cancellationTokenSource.Token);
 
-                tasks.Add(task);
-                cancellations.Add(cancellationTokenSource);
+                lock (tasks) {
+                    tasks.Add(task);
+                }
+
+                lock (cancellations) {
+                    cancellations.Add(cancellationTokenSource);
+                }
+                
             }
 
             // Wait until numberResponsesToWait
@@ -147,23 +157,32 @@ namespace MessageService {
             int countMessages = 0;
             while (countMessages < numberResponsesToWait) {
                 int index = Task.WaitAny(tasks.ToArray());
-
+                if (index < 0) {
+                    return;
+                }
                 if (notNull) {
                     if (tasks[index].Result != null) {
+                        lock (responses) {
+                            responses.Add(tasks[index].Result);
+                            countMessages++;
+                        }
+                    }
+                } else {
+                    lock (responses) {
                         responses.Add(tasks[index].Result);
                         countMessages++;
                     }
-                } else {
-                    responses.Add(tasks[index].Result);
-                    countMessages++;
                 }
 
-                // cancel task
-                cancellations[index].Cancel();
+                lock (cancellations) {
+                    // cancel task
+                    cancellations[index].Cancel();
+                    cancellations.RemoveAt(index);
+                }
 
-                // dispose task in the lists
-                tasks.RemoveAt(index);
-                cancellations.RemoveAt(index);
+                lock (tasks) {
+                    tasks.RemoveAt(index);
+                }
             }
 
             // Cancel remaining sub-tasks
@@ -173,8 +192,10 @@ namespace MessageService {
         private static void CancelSubTasks(List<CancellationTokenSource> cancellations) {
             Log.Warn("Multicast Request: cancellation was issued. Cancel all request Tasks.");
             // cancel all other tasks
-            foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
-                cancellationTokenSource.Cancel();
+            lock (cancellations) {
+                foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
+                    cancellationTokenSource.Cancel();
+                }
             }
         }
 

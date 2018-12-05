@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
 using MessageService.Serializable;
 
 namespace MessageService {
@@ -23,13 +25,6 @@ namespace MessageService {
         public int OpNumber { get; set; }
         public AutoResetEvent Executed { get; set; }
 
-        protected Executor(string clientId, int requestNumber, string tuple) {
-            this.ClientId = clientId;
-            this.Tuple = tuple;
-            this.RequestNumber = requestNumber;
-            this.Executed = new AutoResetEvent(false);
-        }
-
         protected Executor(ClientRequest clientRequest) {
             this.ClientId = clientRequest.ClientId;
             this.Tuple = clientRequest.Tuple;
@@ -37,14 +32,22 @@ namespace MessageService {
             this.Executed = new AutoResetEvent(false);
         }
 
+        protected Executor(ClientRequest clientRequest, int opNumber) {
+            this.ClientId = clientRequest.ClientId;
+            this.Tuple = clientRequest.Tuple;
+            this.RequestNumber = clientRequest.RequestNumber;
+            this.OpNumber = opNumber;
+            this.Executed = new AutoResetEvent(false);
+        }
+
         public abstract void Execute(IExecutorVisitor visitor);
     }
 
     public class AddExecutor : Executor {
-        public AddExecutor(string clientId, int requestNumber, string tuple) 
-            : base(clientId, requestNumber, tuple) {}
-
         public AddExecutor(ClientRequest clientRequest) : base(clientRequest) { }
+
+        public AddExecutor(ClientRequest clientRequest, int opNumber) 
+            : base(clientRequest, opNumber) { }
 
         public override void Execute(IExecutorVisitor visitor) {
             visitor.ExecuteAdd(this);
@@ -52,10 +55,10 @@ namespace MessageService {
     }
 
     public class TakeExecutor : Executor {
-        public TakeExecutor(string clientId, int requestNumber, string tuple)
-            : base(clientId, requestNumber, tuple) { }
-
         public TakeExecutor(ClientRequest clientRequest) : base(clientRequest) { }
+
+        public TakeExecutor(ClientRequest clientRequest, int opNumber) 
+            : base(clientRequest, opNumber) { }
 
         public override void Execute(IExecutorVisitor visitor) {
             visitor.ExecuteTake(this);
@@ -63,10 +66,9 @@ namespace MessageService {
     }
 
     public class ReadExecutor : Executor {
-        public ReadExecutor(string clientId, int requestNumber, string tuple)
-            : base(clientId, requestNumber, tuple) { }
-
         public ReadExecutor(ClientRequest clientRequest) : base(clientRequest) { }
+
+        public ReadExecutor(ClientRequest clientRequest, int opNumber) : base(clientRequest, opNumber) { }
 
         public override void Execute(IExecutorVisitor visitor) {
             visitor.ExecuteRead(this);
@@ -74,33 +76,36 @@ namespace MessageService {
     }
 
     public static class ExecutorFactory {
-        public static Executor Factory(ClientRequest clientRequest) {
+        private static readonly ConcurrentDictionary<ClientRequest, Executor> Executors = new ConcurrentDictionary<ClientRequest, Executor>();
+
+        public static Executor Factory(ClientRequest clientRequest, int opNumber) {
             Executor clientExecutor = null;
-            if (clientRequest is AddRequest) {
-                clientExecutor = new AddExecutor(clientRequest);
-            } else if (clientRequest is TakeRequest) {
-                clientExecutor = new TakeExecutor(clientRequest);
-            } else if (clientRequest is ReadRequest) {
-                clientExecutor = new ReadExecutor(clientRequest);
+            lock (clientRequest) {
+                if (Executors.TryGetValue(clientRequest, out clientExecutor)) {
+                    return clientExecutor;
+                }
             }
 
+            if (clientRequest is AddRequest) {
+                clientExecutor = new AddExecutor(clientRequest, opNumber);
+            } else if (clientRequest is TakeRequest) {
+                clientExecutor = new TakeExecutor(clientRequest, opNumber);
+            } else if (clientRequest is ReadRequest) {
+                clientExecutor = new ReadExecutor(clientRequest, opNumber);
+            }
+
+            Executors.TryAdd(clientRequest, clientExecutor);
             return clientExecutor;
         }
     }
 
     // XL --------------------------------------------------------------------------------
     public abstract class ExecutorXL : Executor {
-        protected ExecutorXL(string clientId, int requestNumber, string tuple) 
-            : base(clientId, requestNumber, tuple) { }
-
         protected ExecutorXL(ClientRequest clientRequest) 
             : base(clientRequest) { }
     }
 
     public class GetAndLockExecutor : Executor {
-        public GetAndLockExecutor(string clientId, int requestNumber, string tuple)
-            : base(clientId, requestNumber, tuple) { }
-
         public GetAndLockExecutor(ClientRequest clientRequest) : base(clientRequest) { }
 
         public override void Execute(IExecutorVisitor visitor) {
@@ -110,9 +115,6 @@ namespace MessageService {
     }
 
     public class UnlockExecutor : Executor {
-        public UnlockExecutor(string clientId, int requestNumber, string tuple)
-            : base(clientId, requestNumber, tuple) { }
-
         public UnlockExecutor(ClientRequest clientRequest) : base(clientRequest) { }
 
         public override void Execute(IExecutorVisitor visitor) {

@@ -5,5 +5,7 @@
         public const int TIMEOUT_HEART_BEAT = 5000;
 
         public const int TIMEOUT_INIT = 11000;
+
+        public const int TIMEOUT_RECOVERY = 5000;
     }
 }

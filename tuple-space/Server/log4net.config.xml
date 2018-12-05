@@ -12,4 +12,10 @@
   <logger name="MessageService">
     <level value="OFF"/>
   </logger>
+  <logger name="StateMachineReplication">
+    <level value="INFO"/>
+  </logger>
+  <logger name="TupleSpace">
+    <level value="INFO"/>
+  </logger>
 </log4net>

@@ -118,12 +118,25 @@ namespace MessageService.Serializable {
         public int ViewNumber { get; set; }
         public int OldViewNumber { get; set; }
         public SortedDictionary<string, Uri> Configuration { get; set; }
+        public List<ClientRequest> Logger { get; set; }
+        public int OpNumber { get; set; }
+        public int CommitNumber { get; set; }
 
-        public DoViewChange(string serverId, int viewNumber, int oldViewNumber, SortedDictionary<string, Uri> configuration) {
+        public DoViewChange(string serverId, 
+            int viewNumber, 
+            int oldViewNumber, 
+            SortedDictionary<string, Uri> configuration, 
+            List<ClientRequest> logger,
+            int opNumber,
+            int commitNumber) {
+
             this.ServerId = serverId;
             this.ViewNumber = viewNumber;
             this.OldViewNumber = oldViewNumber;
             this.Configuration = configuration;
+            this.Logger = logger;
+            this.OpNumber = opNumber;
+            this.CommitNumber = commitNumber;
         }
 
         public IResponse Accept(IMessageSMRVisitor visitor) {
@@ -140,11 +153,24 @@ namespace MessageService.Serializable {
         public string ServerId { get; set; }
         public int ViewNumber { get; set; }
         public SortedDictionary<string, Uri> Configuration { get; set; }
+        public List<ClientRequest> Logger { get; set; }
+        public int OpNumber { get; set; }
+        public int CommitNumber { get; set; }
 
-        public StartChange(string serverId, int viewNumber, SortedDictionary<string, Uri> configuration) {
-            ServerId = serverId;
-            ViewNumber = viewNumber;
-            Configuration = configuration;
+        public StartChange(
+            string serverId, 
+            int viewNumber, 
+            SortedDictionary<string, Uri> configuration,
+            List<ClientRequest> logger,
+            int opNumber,
+            int commitNumber) {
+
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.Configuration = configuration;
+            this.Logger = logger;
+            this.OpNumber = opNumber;
+            this.CommitNumber = commitNumber;
         }
 
         public IResponse Accept(IMessageSMRVisitor visitor) {
@@ -186,6 +212,14 @@ namespace MessageService.Serializable {
         public int OpNumber { get; set; }
         public int CommitNumber { get; set; }
         public List<ClientRequest> SuffixLogger { get; set; }
+
+        public RecoveryResponse(string serverId) {
+            this.ServerId = serverId;
+            this.ViewNumber = -1;
+            this.OpNumber = -1;
+            this.CommitNumber = -1;
+            this.SuffixLogger = null;
+        }
 
         public RecoveryResponse(string serverId, int viewNumber, int opNumber, int commitNumber, List<ClientRequest> suffixLogger) {
             this.ServerId = serverId;
