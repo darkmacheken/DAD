@@ -1,84 +1,91 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
-
+using System.Linq;
 using log4net;
 
 using Client.ScriptStructure;
 using MessageService;
 using MessageService.Serializable;
+using Timeout = MessageService.Timeout;
 
 namespace Client.Visitor {
     public class XLExecuter : IBasicVisitor {
         private static readonly ILog Log = LogManager.GetLogger(typeof(SMRExecuter));
         private readonly MessageServiceClient messageServiceClient;
         private readonly Client client;
-        private readonly Uri[] replicasUrls;
 
     public XLExecuter(MessageServiceClient messageServiceClient, Client client) {
             this.messageServiceClient = messageServiceClient;
             this.client = client;
-            this.replicasUrls = new[] {
-                new Uri("tcp://localhost:8080"),
-                new Uri("tcp://localhost:8081"), 
-                new Uri("tcp://localhost:8082")};
         }
 
         public void VisitAdd(Add add) {
-            AddRequest addRequest = new AddRequest(this.client.Id, this.client.GetRequestNumber(), add.Tuple);
-            this.messageServiceClient.RequestMulticast(addRequest, this.replicasUrls, 3, -1, false);
+            AddRequest addRequest = new AddRequest(this.client.ViewNumber, this.client.Id, this.client.GetRequestNumber(), add.Tuple);
+            this.RequestMulticast(addRequest);
+
             Console.WriteLine($"Added tuple {add.Tuple}");
         }
-
+        
         public void VisitRead(Read read) {
 
             while (true) {
-                ReadRequest readRequest = new ReadRequest(this.client.Id, this.client.GetRequestNumber(), read.Tuple);
-                IResponses responses = this.messageServiceClient.RequestMulticast(readRequest, this.replicasUrls, 3, -1, false);
+                ReadRequest readRequest = new ReadRequest(this.client.ViewNumber, this.client.Id, this.client.GetRequestNumber(), read.Tuple);
 
-                foreach (IResponse response in responses.ToArray()) {
+                IResponse[] responses = this.RequestMulticast(readRequest);
+
+                foreach (IResponse response in responses) {
                     if (response != null && ((ClientResponse)response).Result != null) {
                         Console.WriteLine($"Read tuple = {((ClientResponse)response).Result}");
                         return;
                     }
                 }
-                Log.Debug("Read Request was outdated or needs to be requested again.");
-                Thread.Sleep(100);
+
+                Thread.Sleep(Timeout.TIMEOUT_XL_CLIENT_WAIT);
             }
             
         }
 
         public void VisitTake(Take take) {
             string tupleToTake;
+            // First phase: Lock and choose a tuple from intersection
             while (true) {
-                GetAndLockRequest getAndLockRequest = new
-                    GetAndLockRequest(this.client.ViewNumber, this.client.Id, this.client.GetRequestNumber(), take.Tuple);
-                IResponses responses = this.messageServiceClient.RequestMulticast(getAndLockRequest, this.replicasUrls, 3, -1, false);
+                IResponse[] responses = this.GetAndLock(take);
+
                 List<List<string>> intersection = new List<List<string>>();
-                foreach (IResponse response in responses.ToArray()) {
+                foreach (IResponse response in responses) {
                     if (response != null && ((GetAndLockResponse)response).Tuples.Count > 0) {
                         intersection.Add(((GetAndLockResponse)response).Tuples);
                     }
                 }
                 List<string> intersectTuples = ListUtils.IntersectLists(intersection);
+
                 if (intersectTuples.Count <= 0) {
-                    UnlockRequest unlockRequest = new
-                        UnlockRequest(this.client.ViewNumber, this.client.Id, this.client.GetRequestNumber(), this.client.GetRequestNumber());
-                    this.messageServiceClient.RequestMulticast(unlockRequest, this.replicasUrls, 3, -1, false);
+                    UnlockRequest unlockRequest = new UnlockRequest(
+                        this.client.ViewNumber, 
+                        this.client.Id, 
+                        this.client.GetRequestNumber());
+                    this.messageServiceClient.RequestMulticast(
+                        unlockRequest, 
+                        this.client.ViewServers, 
+                        this.client.ViewServers.Length, 
+                        -1, 
+                        false);
                     Log.Debug("Take intersection is empty. Needs to be requested again.");
-                    Thread.Sleep(100);
+                    Thread.Sleep(Timeout.TIMEOUT_XL_CLIENT_WAIT);
                 } else {
                     tupleToTake = intersectTuples[0];
                     break;
                 }
             }
             
+            // Second phase: Take
             TakeRequest takeRequest = new TakeRequest(
+                this.client.ViewNumber,
                 this.client.Id,
                 this.client.GetRequestNumber(),
-                this.client.GetRequestNumber(), 
                 tupleToTake);
-            this.messageServiceClient.RequestMulticast(takeRequest, this.replicasUrls, 3, -1, false);
+            this.RequestMulticast(takeRequest);
             Console.WriteLine($"Take tuple = {tupleToTake}");
         }
         
@@ -103,6 +110,83 @@ namespace Client.Visitor {
         
         public void VisitWait(Wait wait) {
             Thread.Sleep(wait.Time);
+        }
+
+        private IResponse[] RequestMulticast(ClientRequest clientRequest) {
+            IResponse[] responses = { };
+            while (responses.Length != this.client.ViewServers.Length) {
+                responses = this.messageServiceClient.RequestMulticast(
+                    clientRequest,
+                    this.client.ViewServers,
+                    this.client.ViewServers.Length,
+                    Timeout.TIMEOUT_XL_CLIENT,
+                    true).ToArray();
+
+                if (responses.Length != this.client.ViewServers.Length) {
+                    this.client.DoHandShake();
+                    clientRequest.ViewNumber = this.client.ViewNumber;
+                }
+            }
+
+            return responses;
+        }
+
+        private IResponse[] GetAndLock(Take take) {
+            while (true) {
+                GetAndLockRequest getAndLockRequest = new GetAndLockRequest(
+                    this.client.ViewNumber,
+                    this.client.Id,
+                    this.client.GetRequestNumber(),
+                    take.Tuple);
+                IResponse[] responses = { };
+
+                while (this.client.ViewServers.Length != responses.Length) {
+                    int numberOfLockedRequests = this.client.ViewServers.Length;
+                    responses = this.messageServiceClient.RequestMulticast(
+                        getAndLockRequest,
+                        this.client.ViewServers,
+                        numberOfLockedRequests,
+                        Timeout.TIMEOUT_XL_CLIENT,
+                        true).ToArray();
+
+                    if (responses.Length != this.client.ViewServers.Length) {
+                        this.client.DoHandShake();
+                        getAndLockRequest.ViewNumber = this.client.ViewNumber;
+                    }
+
+                    if (responses.Length == 0) {
+                        continue;
+                    }
+
+                    // Check if refused
+                    // No-one refused
+                    if (responses.Length == numberOfLockedRequests) {
+                        return responses;
+                    }
+
+                    // Some refused but the majority locked
+                    if (responses.Length >= (numberOfLockedRequests / 2) + 1) {
+                        continue;
+                    }
+
+                    // The majority didn't lock so it's needed to unlock
+                    UnlockRequest unlockRequest = new UnlockRequest(
+                        this.client.ViewNumber,
+                        this.client.Id,
+                        this.client.GetRequestNumber());
+
+                    // Unlock
+                    this.messageServiceClient.RequestMulticast(
+                        unlockRequest,
+                        this.client.ViewServers,
+                        numberOfLockedRequests,
+                        -1,
+                        false).ToArray();
+                    break;
+                }
+
+                return responses;
+            }
         }
     }
 }

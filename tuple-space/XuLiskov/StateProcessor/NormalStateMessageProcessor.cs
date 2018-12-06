@@ -164,11 +164,8 @@ namespace XuLiskov.StateProcessor {
             } else {
                 // Not in dictionary... Add with value as null
                 this.replicaState.ClientTable.Add(clientRequest.ClientId, new Tuple<int, ClientResponse>(-1, null));
+                this.replicaState.HandlersClient.TryAdd(clientRequest.ClientId, new EventWaitHandle(false, EventResetMode.ManualReset));
             }
-
-            // Update Client Table With status execution
-            this.replicaState.ClientTable[clientRequest.ClientId] =
-                new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientExecutor);
 
             // Execute request
             clientExecutor.Execute(this.replicaState.RequestsExecutor);
@@ -176,6 +173,10 @@ namespace XuLiskov.StateProcessor {
             // Notify threads waiting
             this.replicaState.HandlersClient[clientRequest.ClientId].Set();
             this.replicaState.HandlersClient[clientRequest.ClientId].Reset();
+
+            if (this.replicaState.ClientTable[clientRequest.ClientId].Item1 != clientRequest.RequestNumber) {
+                return ProcessRequest.DROP;
+            }
 
             return ProcessRequest.LAST_EXECUTION;
         }

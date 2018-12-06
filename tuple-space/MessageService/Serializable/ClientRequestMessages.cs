@@ -38,7 +38,11 @@ namespace MessageService.Serializable {
 
     [Serializable]
     public class ReadRequest : ClientRequest {
-        public ReadRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
+        public ReadRequest(string clientId, int requestNumber, string tuple) 
+            : base(clientId, requestNumber, tuple) { }
+
+        public ReadRequest(int viewNumber, string clientId, int requestNumber, string tuple)
+            : base(viewNumber, clientId, requestNumber, tuple) { }
 
         public override string ToString() {
             return $"{{ read {base.ToString()}, {this.ClientId}, {this.RequestNumber} }}";
@@ -55,7 +59,11 @@ namespace MessageService.Serializable {
 
     [Serializable]
     public class AddRequest : ClientRequest {
-        public AddRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
+        public AddRequest(string clientId, int requestNumber, string tuple) 
+            : base(clientId, requestNumber, tuple) { }
+
+        public AddRequest(int viewNumber, string clientId, int requestNumber, string tuple) 
+            : base(viewNumber, clientId, requestNumber, tuple) { }
 
         public override string ToString() {
             return $"{{ add {base.ToString()}, {this.ClientId}, {this.RequestNumber} }}";
@@ -74,13 +82,12 @@ namespace MessageService.Serializable {
     public class TakeRequest : ClientRequest {
         public int RequestNumberLock { get; set; }
 
-        public TakeRequest(string clientId, int requestNumber, string tuple) : base(clientId, requestNumber, tuple) { }
+        public TakeRequest(string clientId, int requestNumber, string tuple) 
+            : base(clientId, requestNumber, tuple) { }
 
 
-        public TakeRequest(string clientId, int requestNumber, int requestNumberLock, string tuple)
-            : base(clientId, requestNumber, tuple) {
-            this.RequestNumberLock = requestNumberLock;
-        }
+        public TakeRequest(int viewNumber, string clientId, int requestNumber, string tuple)
+            : base(viewNumber, clientId, requestNumber, tuple) { }
 
         public override string ToString() {
             return $"{{ take: {{tuple: {base.ToString()}, ClientId: {this.ClientId}," +

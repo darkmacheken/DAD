@@ -22,7 +22,8 @@ namespace XuLiskov {
             ClientResponse clientResponse = new ClientResponse(addExecutor.RequestNumber, viewNumber, string.Empty);
 
             // update client table
-            UpdateClientTable(addExecutor, clientResponse);
+            this.UpdateClientTable(addExecutor, clientResponse);
+            this.replicaState.IncrementCommitNumber();
 
             // Signal waiting thread that the execution is done
             addExecutor.Executed.Set();
@@ -30,7 +31,10 @@ namespace XuLiskov {
         
         public void ExecuteTake(TakeExecutor takeExecutor) {
             Log.Debug($"Requesting Take({takeExecutor.Tuple}) to Tuple Space.");
-            this.replicaState.TupleSpace.UnlockAndTake(takeExecutor.ClientId, takeExecutor.Tuple);
+            if (!this.replicaState.TupleSpace.UnlockAndTake(takeExecutor.ClientId, takeExecutor.Tuple)) {
+                takeExecutor.Executed.Set();
+                return;
+            }
 
             int viewNumber = this.replicaState.ViewNumber;
 
@@ -38,9 +42,10 @@ namespace XuLiskov {
                 takeExecutor.RequestNumber,
                 viewNumber,
                 takeExecutor.Tuple);
-
+            
             // update client table
-            UpdateClientTable(takeExecutor, clientResponse);
+            this.UpdateClientTable(takeExecutor, clientResponse);
+            this.replicaState.IncrementCommitNumber();
 
             // Signal waiting thread that the execution is done
             takeExecutor.Executed.Set();
@@ -59,7 +64,8 @@ namespace XuLiskov {
             ClientResponse clientResponse = new ClientResponse(readExecutor.RequestNumber, viewNumber, tuple);
 
             // update client table
-            UpdateClientTable(readExecutor, clientResponse);
+            this.UpdateClientTable(readExecutor, clientResponse);
+            this.replicaState.IncrementCommitNumber();
 
             // Signal waiting thread that the execution is done
             readExecutor.Executed.Set();
@@ -69,13 +75,22 @@ namespace XuLiskov {
             Log.Debug($"Requesting GetAndLock({getAndLockExecutor.Tuple}) to Tuple Space.");
             List<string> tuples = this.replicaState.TupleSpace.GetAndLock(getAndLockExecutor.ClientId, getAndLockExecutor.Tuple);
 
+            if (tuples == null) {
+                // Got refused
+                getAndLockExecutor.Executed.Set();
+                return;
+            }
+
             int viewNumber = this.replicaState.ViewNumber;
 
-            GetAndLockResponse clientResponse = new
-                GetAndLockResponse(getAndLockExecutor.RequestNumber, viewNumber, tuples);
+            GetAndLockResponse clientResponse = new GetAndLockResponse(
+                getAndLockExecutor.RequestNumber, 
+                viewNumber, 
+                tuples);
 
             // update client table
-            UpdateClientTable(getAndLockExecutor, clientResponse);
+            this.UpdateClientTable(getAndLockExecutor, clientResponse);
+            this.replicaState.IncrementCommitNumber();
 
             // Signal waiting thread that the execution is done
             getAndLockExecutor.Executed.Set();
@@ -92,6 +107,7 @@ namespace XuLiskov {
 
             // update client table
             UpdateClientTable(unlockExecutor, clientResponse);
+            this.replicaState.IncrementCommitNumber();
 
             // Signal waiting thread that the execution is done
             unlockExecutor.Executed.Set();

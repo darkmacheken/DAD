@@ -13,7 +13,7 @@
     <level value="OFF"/>
   </logger>
   <logger name="StateMachineReplication">
-    <level value="OFF"/>
+    <level value="ERROR"/>
   </logger>
   <logger name="XuLiskov">
     <level value="DEBUG"/>

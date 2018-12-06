@@ -16,5 +16,9 @@
         public const int TIMEOUT_SMR_CLIENT = 5000;
 
         public const int TIMEOUT_SMR_CLIENT_WAIT = 1000;
+
+        public const int TIMEOUT_XL_CLIENT = 15000;
+
+        public const int TIMEOUT_XL_CLIENT_WAIT = 1000;
     }
 }
