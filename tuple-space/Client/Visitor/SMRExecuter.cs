@@ -7,10 +7,12 @@ using log4net;
 
 using MessageService;
 using MessageService.Serializable;
+using Timeout = MessageService.Timeout;
 
 namespace Client.Visitor {
     public class SMRExecuter : IBasicVisitor {
         private static readonly ILog Log = LogManager.GetLogger(typeof(SMRExecuter));
+
         private readonly MessageServiceClient messageServiceClient;
         private readonly Client client;
 
@@ -20,62 +22,75 @@ namespace Client.Visitor {
         }
 
         public void VisitAdd(Add add) {
-            ClientResponse clientResponse = (ClientResponse)this.messageServiceClient.Request(
-                new AddRequest(this.client.Id, this.client.GetRequestNumber(), add.Tuple),
-                this.client.Leader);
+            AddRequest addRequest = new AddRequest(this.client.Id, this.client.GetRequestNumber(), add.Tuple);
 
-            if (clientResponse != null) {
-                Console.WriteLine($"Added tuple {add.Tuple}");
-            } else {
-                Log.Error("Add Request was outdated.");
+            ClientResponse clientResponse = null;
+
+            while (clientResponse == null) {
+                clientResponse = (ClientResponse)this.messageServiceClient.Request(
+                    addRequest,
+                    this.client.Leader,
+                    Timeout.TIMEOUT_SMR_CLIENT);
+
+                if (clientResponse != null) {
+                    Console.WriteLine($"Added tuple {add.Tuple}");
+                    break;
+                }
+
+                this.client.DoHandShake();
             }
         }
 
         public void VisitRead(Read read) {
             ClientResponse clientResponse;
             do {
-                clientResponse = (ClientResponse) this.messageServiceClient.Request(
-                    new ReadRequest(this.client.Id, this.client.GetRequestNumber(), read.Tuple),
-                    this.client.Leader);
+                clientResponse = null;
+                ReadRequest readRequest = new ReadRequest(this.client.Id, this.client.GetRequestNumber(), read.Tuple);
+                while (clientResponse == null) {
+                    clientResponse = (ClientResponse)this.messageServiceClient.Request(
+                        readRequest,
+                        this.client.Leader,
+                        Timeout.TIMEOUT_SMR_CLIENT);
+                    if (clientResponse != null) {
+                        break;
+                    }
 
-                if (clientResponse == null) {
-                    break;
+                    this.client.DoHandShake();
                 }
 
                 if (clientResponse.Result == null) {
-                    Thread.Sleep(1000);
+                    Thread.Sleep(Timeout.TIMEOUT_SMR_CLIENT_WAIT);
                 }
             } while (clientResponse.Result == null);
 
-            if (clientResponse != null) {
-                Console.WriteLine($"Read tuple = {clientResponse.Result}");
-            } else {
-                Log.Error("Read Request was outdated.");
-            }
-            
+            Console.WriteLine($"Read tuple = {clientResponse.Result}");
+
         }
 
         public void VisitTake(Take take) {
             ClientResponse clientResponse;
             do {
-                clientResponse = (ClientResponse)this.messageServiceClient.Request(
-                    new TakeRequest(this.client.Id, this.client.GetRequestNumber(), take.Tuple), 
-                    this.client.Leader);
+                clientResponse = null;
+                TakeRequest readRequest = new TakeRequest(this.client.Id, this.client.GetRequestNumber(), take.Tuple);
+                while (clientResponse == null) {
+                    clientResponse = (ClientResponse)this.messageServiceClient.Request(
+                        readRequest,
+                        this.client.Leader,
+                        Timeout.TIMEOUT_SMR_CLIENT);
+                    if (clientResponse != null) {
+                        break;
+                    }
 
-                if (clientResponse == null) {
-                    break;
+                    this.client.DoHandShake();
                 }
 
                 if (clientResponse.Result == null) {
-                    Thread.Sleep(1000);
+                    
+                    Thread.Sleep(Timeout.TIMEOUT_SMR_CLIENT_WAIT);
                 }
             } while (clientResponse.Result == null);
 
-            if (clientResponse != null) {
-                Console.WriteLine($"Take tuple = {clientResponse.Result}");
-            } else {
-                Log.Error("Take Request was outdated.");
-            }
+            Console.WriteLine($"Take tuple = {clientResponse.Result}");
         }
 
         public void VisitRepeatBlock(RepeatBlock repeatBlock) {

@@ -206,8 +206,7 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitRecovery(Recovery recovery) {
-            while (!(this.replicaState.State is NormalStateMessageProcessor) && 
-                   !(this.replicaState.State is RecoveryStateMessageProcessor)) {
+            while (!(this.replicaState.State is NormalStateMessageProcessor)) {
                 this.replicaState.HandlerStateChanged.WaitOne();
             }
             return recovery.Accept(this.replicaState.State);

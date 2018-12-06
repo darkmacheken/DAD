@@ -9,5 +9,9 @@
         public const int TIMEOUT_RECOVERY = 5000;
 
         public const int TIMEOUT_VIEW_CHANGE = 5000;
+
+        public const int TIMEOUT_SMR_CLIENT = 5000;
+
+        public const int TIMEOUT_SMR_CLIENT_WAIT = 1000;
     }
 }

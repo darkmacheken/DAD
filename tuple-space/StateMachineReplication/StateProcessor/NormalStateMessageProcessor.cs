@@ -29,7 +29,6 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitAddRequest(AddRequest addRequest) {
             if (!this.replicaState.IAmTheLeader()) {
                 // I'm not the leader. 
-                // TODO: return who's the leader
                 return null;
             }
 
@@ -48,7 +47,6 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitTakeRequest(TakeRequest takeRequest) {
             if (!this.replicaState.IAmTheLeader()) {
                 // I'm not the leader. 
-                // TODO: return who's the leader
                 return null;
             }
 
@@ -67,7 +65,6 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitReadRequest(ReadRequest readRequest) {
             if (!this.replicaState.IAmTheLeader()) {
                 // I'm not the leader. 
-                //TODO: return who's the leader
                 return null;
             }
 
@@ -151,7 +148,7 @@ namespace StateMachineReplication.StateProcessor {
             }
             lock (this.replicaState.State) {
                 if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
-                    this.replicaState.ChangeToViewChange(doViewChange.ViewNumber, doViewChange.Configuration, false);
+                    this.replicaState.ChangeToViewChange(doViewChange.ViewNumber, doViewChange.Configuration);
                 }
             }
             return doViewChange.Accept(this.replicaState.State);
@@ -200,10 +197,13 @@ namespace StateMachineReplication.StateProcessor {
         public IResponse VisitJoinView(JoinView joinView) {
             Log.Info($"JoinView issued for server {joinView.ServerId}");
             int newViewNumber = this.replicaState.ViewNumber + 1;
+            if (this.replicaState.Configuration.ContainsKey(joinView.ServerId)) {
+                return null;
+            }
             SortedDictionary<string, Uri> newConfiguration = new SortedDictionary<string, Uri>(this.replicaState.Configuration);
             newConfiguration.Add(joinView.ServerId, joinView.Url);
 
-            this.replicaState.ChangeToViewChange(newViewNumber, newConfiguration, false);
+            this.replicaState.ChangeToViewChange(newViewNumber, newConfiguration);
             return null;
         }
 
@@ -221,6 +221,16 @@ namespace StateMachineReplication.StateProcessor {
                     return ProcessRequest.DROP;
                 }
 
+                if (clientRequest.RequestNumber == clientResponse.Item1) {
+                    // Duplicate Request
+                    // If it is in execution.. wait.
+                    if (clientResponse.Item2.GetType() == typeof(Executor)) {
+                        Executor executor = (Executor)clientResponse.Item2;
+                        executor.Executed.WaitOne();
+                    }
+                    return ProcessRequest.LAST_EXECUTION;
+                }
+
                 // Execute the requests in client's casual order
                 if (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
                     if (!this.replicaState.HandlersClient.ContainsKey(clientRequest.ClientId)) {
@@ -233,18 +243,11 @@ namespace StateMachineReplication.StateProcessor {
                         clientRequest.ClientId,
                         out EventWaitHandle myHandler);
                     while (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
+                        if (clientRequest.RequestNumber > clientResponse.Item1 + 1) {
+                            return ProcessRequest.DROP;
+                        }
                         myHandler.WaitOne();
                     }
-                }
-
-                if (clientRequest.RequestNumber == clientResponse.Item1) {
-                    // Duplicate Request
-                    // If it is in execution.. wait.
-                    if (clientResponse.Item2.GetType() == typeof(Executor)) {
-                        Executor executor = (Executor)clientResponse.Item2;
-                        executor.Executed.WaitOne();
-                    }
-                    return ProcessRequest.LAST_EXECUTION;
                 }
             } else {
                 // Not in dictionary... Add with value as null
@@ -289,7 +292,7 @@ namespace StateMachineReplication.StateProcessor {
             // Wait for (Number backup replicas + the leader) / 2
             int f = this.replicaState.Configuration.Count / 2;
             this.messageServiceClient.RequestMulticast(prepareMessage, replicasUrls, f, -1, true);
-            
+
             return opNumber;
         }
 

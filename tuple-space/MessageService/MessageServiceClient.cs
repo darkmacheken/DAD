@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Threading;
@@ -65,15 +66,17 @@ namespace MessageService {
                     return this.Request(message, url);
                 }
             }, cancellationTokenSource.Token);
+           try {
+               bool taskCompleted = timeout < 0 ? task.Wait(-1) : task.Wait(timeout);
 
-            bool taskCompleted = timeout < 0 ? task.Wait(-1) : task.Wait(timeout);
-
-            if (taskCompleted) {
-                return task.Result;
-            }
-
-            // Cancel task, we don't care anymore.
-            cancellationTokenSource.Cancel();
+               if (taskCompleted) {
+                   return task.Result;
+               }
+               cancellationTokenSource.Cancel();
+            } catch (Exception) {
+               // continue
+           }
+            
             Log.Error("Request: Timeout, abort thread request.");
             return null;
         }
@@ -134,15 +137,19 @@ namespace MessageService {
                 },
                 cancellationTs.Token);
 
-            bool taskCompleted = timeout < 0 ? getResponses.Wait(-1) : getResponses.Wait(timeout);
+            try {
+                bool taskCompleted = timeout < 0 ? getResponses.Wait(-1) : getResponses.Wait(timeout);
 
-            if (taskCompleted) {
-                Log.Debug($"Multicast response: {responses}");
-                return responses;
+                if (taskCompleted) {
+                    Log.Debug($"Multicast response: {responses}");
+                    return responses;
+                }
+
+                cancellationTs.Cancel();
+            } catch (Exception) {
+                // continue
             }
-
-            // Cancel task, we don't care anymore.
-            cancellationTs.Cancel();
+            
             Log.Error("Multicast Request: Timeout, abort thread request.");
             return responses;
         }
@@ -154,47 +161,56 @@ namespace MessageService {
             List<CancellationTokenSource> cancellations,
             bool notNull) {
 
-            int countMessages = 0;
-            while (countMessages < numberResponsesToWait) {
-                int index = Task.WaitAny(tasks.ToArray());
-                if (index < 0) {
-                    return;
-                }
-                if (notNull) {
-                    if (tasks[index].Result != null) {
+            try {
+                int countMessages = 0;
+                while (countMessages < numberResponsesToWait) {
+                    int index = Task.WaitAny(tasks.ToArray());
+                    if (index < 0) {
+                        return;
+                    }
+                    if (notNull) {
+                        if (tasks[index].Result != null) {
+                            lock (responses) {
+                                responses.Add(tasks[index].Result);
+                                countMessages++;
+                            }
+                        }
+                    } else {
                         lock (responses) {
                             responses.Add(tasks[index].Result);
                             countMessages++;
                         }
                     }
-                } else {
-                    lock (responses) {
-                        responses.Add(tasks[index].Result);
-                        countMessages++;
+
+                    lock (cancellations) {
+                        // cancel task
+                        cancellations[index].Cancel();
+                        cancellations.RemoveAt(index);
+                    }
+
+                    lock (tasks) {
+                        tasks.RemoveAt(index);
                     }
                 }
 
-                lock (cancellations) {
-                    // cancel task
-                    cancellations[index].Cancel();
-                    cancellations.RemoveAt(index);
-                }
-
-                lock (tasks) {
-                    tasks.RemoveAt(index);
-                }
+                // Cancel remaining sub-tasks
+                MessageServiceClient.CancelSubTasks(cancellations);
+            } catch (Exception) {
+                // Continue
             }
-
-            // Cancel remaining sub-tasks
-            MessageServiceClient.CancelSubTasks(cancellations);
+            
         }
 
         private static void CancelSubTasks(List<CancellationTokenSource> cancellations) {
             Log.Warn("Multicast Request: cancellation was issued. Cancel all request Tasks.");
             // cancel all other tasks
             lock (cancellations) {
-                foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
-                    cancellationTokenSource.Cancel();
+                try {
+                    foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
+                        cancellationTokenSource.Cancel();
+                    }
+                } catch (Exception) {
+                    // Continue
                 }
             }
         }

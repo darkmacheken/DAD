@@ -106,7 +106,7 @@ namespace StateMachineReplication {
                                     .ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
 
                             Log.Debug($"Server {entry.Key} is presumably dead as the HeartBeat timeout expired.");
-                            this.ChangeToViewChange(newViewNumber, newConfiguration, true);
+                            this.ChangeToViewChange(newViewNumber, newConfiguration);
                             break;
                         }
                     }
@@ -214,16 +214,8 @@ namespace StateMachineReplication {
             }
         }
 
-        public void ChangeToViewChange(int newViewNumber, SortedDictionary<string, Uri> configuration, bool onlyNormal) {
+        public void ChangeToViewChange(int newViewNumber, SortedDictionary<string, Uri> configuration) {
             lock (this.State) {
-                if (onlyNormal) {
-                    if (this.State is NormalStateMessageProcessor) {
-                        this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber, configuration);
-                        this.HandlerStateChanged.Set();
-                        this.HandlerStateChanged.Reset();
-                        return;
-                    }
-                }
                 if (!(this.State is ViewChangeMessageProcessor)) {
                     this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber, configuration);
                     this.HandlerStateChanged.Set();
