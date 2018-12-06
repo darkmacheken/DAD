@@ -123,7 +123,7 @@ namespace StateMachineReplication.StateProcessor {
                 this.replicaState.SetNewConfiguration(
                     new SortedDictionary<string, Uri> { { this.replicaState.ServerId, this.replicaState.myUrl } },
                     new Uri[] { },
-                    0);
+                    this.replicaState.ViewNumber + 1);
                 this.replicaState.ChangeToNormalState();
                 return;
             }
