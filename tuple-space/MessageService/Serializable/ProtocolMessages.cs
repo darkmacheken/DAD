@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 using MessageService.Visitor;
+using TupleSpace;
 
 namespace MessageService.Serializable {
 
@@ -287,6 +288,111 @@ namespace MessageService.Serializable {
 
         public override string ToString() {
             return $"{{Client ID: {this.ClientId}, RequestNumber: {this.RequestNumber}}}";
+        }
+    }
+
+    [Serializable]
+    public class StartViewChangeXL : IMessage {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public SortedDictionary<string, Uri> Configuration { get; set; }
+
+        public StartViewChangeXL(string serverId, int viewNumber, SortedDictionary<string, Uri> configuration) {
+            ServerId = serverId;
+            ViewNumber = viewNumber;
+            Configuration = configuration;
+        }
+
+        public IResponse Accept(IMessageSMRVisitor visitor) {
+            throw new NotSupportedException();
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitStartViewChangeXL(this);
+        }
+    }
+
+    [Serializable]
+    public class StartViewChangeXLOk : IResponse {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public SortedDictionary<string, Uri> Configuration { get; set; }
+
+        public StartViewChangeXLOk(string serverId, int viewNumber, SortedDictionary<string, Uri> configuration) {
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.Configuration = configuration;
+        }
+    }
+
+    [Serializable]
+    public class DoViewChangeXL : IMessage {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public int OldViewNumber { get; set; }
+        public SortedDictionary<string, Uri> Configuration { get; set; }
+        public TupleSpace.TupleSpace TupleSpace { get; set; }
+        public Dictionary<string, Tuple<int, ClientResponse>> ClientTable { get; set; }
+        public int CommitNumber { get; set; }
+
+        public DoViewChangeXL(
+            string serverId,
+            int viewNumber,
+            int oldViewNumber,
+            SortedDictionary<string, Uri> configuration,
+            TupleSpace.TupleSpace tupleSpace,
+            Dictionary<string, Tuple<int, ClientResponse>> clientTable,
+            int commitNumber) {
+
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.OldViewNumber = oldViewNumber;
+            this.Configuration = configuration;
+            this.TupleSpace = tupleSpace;
+            this.ClientTable = clientTable;
+            this.CommitNumber = commitNumber;
+        }
+
+        public IResponse Accept(IMessageSMRVisitor visitor) {
+            throw new NotSupportedException();
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitDoViewChangeXL(this);
+        }
+    }
+
+    [Serializable]
+    public class StartChangeXL : IMessage {
+        public string ServerId { get; set; }
+        public int ViewNumber { get; set; }
+        public SortedDictionary<string, Uri> Configuration { get; set; }
+        public TupleSpace.TupleSpace TupleSpace { get; set; }
+        public Dictionary<string, Tuple<int, ClientResponse>> ClientTable { get; set; }
+        public int CommitNumber { get; set; }
+
+        public StartChangeXL(
+            string serverId,
+            int viewNumber,
+            SortedDictionary<string, Uri> configuration,
+            TupleSpace.TupleSpace tupleSpace,
+            Dictionary<string, Tuple<int, ClientResponse>> clientTable,
+            int commitNumber) {
+
+            this.ServerId = serverId;
+            this.ViewNumber = viewNumber;
+            this.Configuration = configuration;
+            this.TupleSpace = tupleSpace;
+            this.ClientTable = clientTable;
+            this.CommitNumber = commitNumber;
+        }
+
+        public IResponse Accept(IMessageSMRVisitor visitor) {
+            throw new NotSupportedException();
+        }
+
+        public IResponse Accept(IMessageXLVisitor visitor) {
+            return visitor.VisitStartChangeXL(this);
         }
     }
 }

@@ -19,4 +19,13 @@ namespace MessageService.Serializable {
             return visitor.VisitHeartBeat(this);
         }
     }
+
+    [Serializable]
+    public class HeartBeatResponse : IResponse {
+        public int ViewNumber { get; set; }
+
+        public HeartBeatResponse(int viewNumber) {
+            this.ViewNumber = viewNumber;
+        }
+    }
 }

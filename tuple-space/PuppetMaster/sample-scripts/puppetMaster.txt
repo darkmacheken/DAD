@@ -1,6 +1,4 @@
-Server s1 tcp://localhost:8080/ 10 1000 SMR
+Server s1 tcp://localhost:8080/ 10 1000 XL
 Wait 11000
-Server s2 tcp://localhost:8081/ 10 1000 SMR
-Server s3 tcp://localhost:8082/ 10 1000 SMR
-Client c1 tcp://localhost:8101 ../../../Client/sample-scripts/sampleClientScript2-1.txt
-Client c2 tcp://localhost:8102 ../../../Client/sample-scripts/sampleClientScript2-2.txt
+Server s2 tcp://localhost:8081/ 10 1000 XL
+Server s3 tcp://localhost:8082/ 10 1000 XL

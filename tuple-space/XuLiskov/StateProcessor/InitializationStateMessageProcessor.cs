@@ -8,8 +8,8 @@ using MessageService.Serializable;
 using MessageService.Visitor;
 using Timeout = MessageService.Timeout;
 
-namespace StateMachineReplication.StateProcessor {
-    public class InitializationStateMessageProcessor : IMessageSMRVisitor {
+namespace XuLiskov.StateProcessor {
+    public class InitializationStateMessageProcessor : IMessageXLVisitor {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(InitializationStateMessageProcessor));
 
         private readonly MessageServiceClient messageServiceClient;
@@ -40,6 +40,43 @@ namespace StateMachineReplication.StateProcessor {
             return this.WaitNormalState(readRequest);
         }
 
+        public IResponse VisitGetAndLock(GetAndLockRequest getAndLockRequest) {
+            return this.WaitNormalState(getAndLockRequest);
+        }
+
+        public IResponse VisitUnlockRequest(UnlockRequest unlockRequest) {
+            return this.WaitNormalState(unlockRequest);
+        }
+
+        public IResponse VisitStartViewChangeXL(StartViewChangeXL startViewChange) {
+            return this.WaitNormalState(startViewChange);
+        }
+
+        public IResponse VisitDoViewChangeXL(DoViewChangeXL doViewChange) {
+            if (doViewChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
+            lock (this) {
+                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
+                    this.replicaState.ChangeToViewChange(doViewChange);
+                }
+            }
+            return doViewChange.Accept(this.replicaState.State);
+        }
+
+        public IResponse VisitStartChangeXL(StartChangeXL startChange) {
+            Log.Info($"Start Change issued from server {startChange.ServerId}");
+            if (startChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
+            lock (this) {
+                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
+                    this.replicaState.ChangeToViewChange(startChange);
+                }
+            }
+            return startChange.Accept(this.replicaState.State);
+        }
+
         public IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest) {
             return this.WaitNormalState(clientHandShakeRequest);
         }
@@ -53,51 +90,9 @@ namespace StateMachineReplication.StateProcessor {
         }
 
         public IResponse VisitHeartBeat(HeartBeat heartBeat) {
-            this.replicaState.UpdateHeartBeat(heartBeat.ServerId);
-            return null;
+            return this.replicaState.UpdateHeartBeat(heartBeat.ServerId);
         }
 
-        public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
-            return this.WaitNormalState(prepareMessage);
-        }
-
-        public IResponse VisitCommitMessage(CommitMessage commitMessage) {
-            return this.WaitNormalState(commitMessage);
-        }
-
-        public IResponse VisitStartViewChange(StartViewChange startViewChange) {
-            return this.WaitNormalState(startViewChange);
-        }
-
-        public IResponse VisitDoViewChange(DoViewChange doViewChange) {
-            if (doViewChange.ViewNumber <= this.replicaState.ViewNumber) {
-                return null;
-            }
-            lock (this) {
-                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
-                    this.replicaState.ChangeToViewChange(doViewChange);
-                }
-            }
-            return doViewChange.Accept(this.replicaState.State);
-        }
-
-        public IResponse VisitStartChange(StartChange startChange) {
-            Log.Info($"Start Change issued from server {startChange.ServerId}");
-            if (startChange.ViewNumber <= this.replicaState.ViewNumber) {
-                return null;
-            }
-            lock (this) {
-                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
-                    this.replicaState.ChangeToViewChange(startChange);
-                }
-            }
-            return startChange.Accept(this.replicaState.State);
-        }
-
-        public IResponse VisitRecovery(Recovery recovery) {
-            return this.WaitNormalState(recovery);
-        }
-        
         private IResponse WaitNormalState(IMessage message) {
             while (!(this.replicaState.State is NormalStateMessageProcessor)) {
                 this.replicaState.HandlerStateChanged.WaitOne();
@@ -151,5 +146,6 @@ namespace StateMachineReplication.StateProcessor {
         public override string ToString() {
             return "Initialization";
         }
+        
     }
 }

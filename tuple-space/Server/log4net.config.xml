@@ -13,6 +13,9 @@
     <level value="OFF"/>
   </logger>
   <logger name="StateMachineReplication">
+    <level value="OFF"/>
+  </logger>
+  <logger name="XuLiskov">
     <level value="DEBUG"/>
   </logger>
   <logger name="TupleSpace">

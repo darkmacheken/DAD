@@ -48,7 +48,8 @@ namespace MessageService {
 
                 Log.Error($"Request: Could not resolve url {url.Host}:{url.Port}");
                 return null;
-            } catch (Exception) {
+            } catch (Exception e) {
+                Log.Error(e.Message);
                 return null;
             }
         }
@@ -73,8 +74,8 @@ namespace MessageService {
                    return task.Result;
                }
                cancellationTokenSource.Cancel();
-            } catch (Exception) {
-               // continue
+            } catch (Exception e) {
+               Log.Error(e.Message);
            }
             
             Log.Error("Request: Timeout, abort thread request.");
@@ -146,8 +147,8 @@ namespace MessageService {
                 }
 
                 cancellationTs.Cancel();
-            } catch (Exception) {
-                // continue
+            } catch (Exception e) {
+                Log.Error(e.Message);
             }
             
             Log.Error("Multicast Request: Timeout, abort thread request.");
@@ -195,10 +196,10 @@ namespace MessageService {
 
                 // Cancel remaining sub-tasks
                 MessageServiceClient.CancelSubTasks(cancellations);
-            } catch (Exception) {
-                // Continue
+            } catch (Exception e) {
+                Log.Error(e.Message);
             }
-            
+
         }
 
         private static void CancelSubTasks(List<CancellationTokenSource> cancellations) {
@@ -209,8 +210,8 @@ namespace MessageService {
                     foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
                         cancellationTokenSource.Cancel();
                     }
-                } catch (Exception) {
-                    // Continue
+                } catch (Exception e) {
+                    Log.Error(e.Message);
                 }
             }
         }

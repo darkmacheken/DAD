@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace TupleSpace {
-
+    [Serializable]
     public class Tuple {
         // A tuple consists in a list of fields.
         public List<IField> Fields { get; set; }

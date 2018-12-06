@@ -53,7 +53,6 @@
     <Compile Include="StateProcessor\NormalStateMessageProcessor.cs" />
     <Compile Include="StateProcessor\RecoveryStateMessageProcessor.cs" />
     <Compile Include="StateProcessor\ViewChangeMessageProcessor.cs" />
-    <Compile Include="Utils\ConfigurationUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MessageService\MessageService.csproj">

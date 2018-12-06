@@ -6,7 +6,7 @@ using System.Text;
 using TupleSpace.Exceptions;
 
 namespace TupleSpace {
-
+    [Serializable]
     public class TupleSpace {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(TupleSpace));
 

@@ -57,8 +57,15 @@
     <Compile Include="Serializable\ClientRequestMessages.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Timeout.cs" />
+    <Compile Include="Utils\ConfigurationUtils.cs" />
     <Compile Include="Visitor\IMessageVisitor.cs" />
     <Compile Include="Wrappers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TupleSpace\TupleSpace.csproj">
+      <Project>{F3FB05ED-40A7-4C96-B94B-B926893CFF7C}</Project>
+      <Name>TupleSpace</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

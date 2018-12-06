@@ -35,5 +35,11 @@ namespace MessageService.Visitor {
         IResponse VisitGetAndLock(GetAndLockRequest getAndLockRequest);
 
         IResponse VisitUnlockRequest(UnlockRequest unlockRequest);
+
+        IResponse VisitStartViewChangeXL(StartViewChangeXL startViewChange);
+
+        IResponse VisitDoViewChangeXL(DoViewChangeXL doViewChange);
+
+        IResponse VisitStartChangeXL(StartChangeXL startChange);
     }
 }

@@ -47,7 +47,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReplicaState.cs" />
     <Compile Include="RequestsExecutor.cs" />
+    <Compile Include="StateProcessor\InitializationStateMessageProcessor.cs" />
     <Compile Include="StateProcessor\NormalStateMessageProcessor.cs" />
+    <Compile Include="StateProcessor\ViewChangeMessageProcessor.cs" />
     <Compile Include="XLProtocol.cs" />
   </ItemGroup>
   <ItemGroup>

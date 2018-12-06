@@ -20,7 +20,7 @@ namespace StateMachineReplication {
 
         // SMR protocol state
         public string ServerId { get; }
-        public Uri myUrl { get; }
+        public Uri MyUrl { get; }
 
         public SortedDictionary<string, Uri> Configuration { get; private set; }
         public List<Uri> ReplicasUrl { get; private set; }
@@ -60,7 +60,7 @@ namespace StateMachineReplication {
         public ReplicaState(MessageServiceClient messageServiceClient, Uri url, string serverId) {
             this.MessageServiceClient = messageServiceClient;
             this.ServerId = serverId;
-            this.myUrl = url;
+            this.MyUrl = url;
 
             this.Configuration = new SortedDictionary<string, Uri> { { this.ServerId, url } };
             this.ReplicasUrl = new List<Uri>();
@@ -133,6 +133,14 @@ namespace StateMachineReplication {
         public bool IAmTheLeader() {
             return string.Equals(this.ServerId, this.Leader);
         }
+        
+        public void SetNewConfiguration(SortedDictionary<string, Uri> configuration, Uri[] replicasUrl, int newViewNumber) {
+            this.Configuration = configuration;
+            this.ReplicasUrl = replicasUrl.ToList();
+            this.Leader = this.Configuration.Keys.ToArray()[0];
+            this.ViewNumber = newViewNumber;
+            this.UpdateOpNumber();
+        }
 
         public void SetNewConfiguration(
             SortedDictionary<string, Uri> configuration, 
@@ -175,15 +183,7 @@ namespace StateMachineReplication {
                 }
             });
         }
-
-        public void SetNewConfiguration(SortedDictionary<string, Uri> configuration, Uri[] replicasUrl, int newViewNumber) {
-            this.Configuration = configuration;
-            this.ReplicasUrl = replicasUrl.ToList();
-            this.Leader = this.Configuration.Keys.ToArray()[0];
-            this.ViewNumber = newViewNumber;
-            this.UpdateOpNumber();
-        }
-
+        
         public void RestartInitializationState() {
             lock (this.State) {
                 if (this.State is InitializationStateMessageProcessor) {

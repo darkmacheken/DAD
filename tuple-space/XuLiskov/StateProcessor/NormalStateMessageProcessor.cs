@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Threading;
 using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
-using XuLiskov;
+using Timeout = MessageService.Timeout;
 
 namespace XuLiskov.StateProcessor {
     internal enum ProcessRequest { DROP, LAST_EXECUTION }
@@ -18,6 +19,8 @@ namespace XuLiskov.StateProcessor {
         public NormalStateMessageProcessor(ReplicaState replicaState, MessageServiceClient messageServiceClient) {
             this.replicaState = replicaState;
             this.messageServiceClient = messageServiceClient;
+
+            Log.Info("Changed to Normal State.");
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
@@ -40,24 +43,75 @@ namespace XuLiskov.StateProcessor {
             return ExecuteRequest(unlockRequest, new UnlockExecutor(unlockRequest));
         }
 
+        public IResponse VisitStartViewChangeXL(StartViewChangeXL startViewChange) {
+            if (this.replicaState.HandlerStateChanged.WaitOne(Timeout.TIMEOUT_VIEW_CHANGE) &&
+                this.replicaState.State is ViewChangeMessageProcessor) {
+                return startViewChange.Accept(this.replicaState.State);
+            }
+            return null;
+        }
+
+        public IResponse VisitDoViewChangeXL(DoViewChangeXL doViewChange) {
+            if (doViewChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
+            lock (this.replicaState.State) {
+                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
+                    this.replicaState.ChangeToViewChange(doViewChange.ViewNumber, doViewChange.Configuration);
+                }
+            }
+            return doViewChange.Accept(this.replicaState.State);
+        }
+
+        public IResponse VisitStartChangeXL(StartChangeXL startChange) {
+            if (startChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
+            lock (this.replicaState.State) {
+                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
+                    this.replicaState.ChangeToViewChange(startChange);
+                }
+            }
+            return startChange.Accept(this.replicaState.State);
+        }
+
         public IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest) {
             Uri[] viewConfiguration = this.replicaState.Configuration.Values.ToArray();
             return new ClientHandShakeResponse(Protocol.XuLiskov, this.replicaState.ViewNumber, viewConfiguration);
         }
 
         public IResponse VisitServerHandShakeRequest(ServerHandShakeRequest serverHandShakeRequest) {
-            throw new NotImplementedException();
+            return new ServerHandShakeResponse(this.replicaState.Configuration.Values.ToArray());
         }
 
         public IResponse VisitJoinView(JoinView joinView) {
-            throw new NotImplementedException();
+            Log.Info($"JoinView issued for server {joinView.ServerId}");
+            int newViewNumber = this.replicaState.ViewNumber + 1;
+            if (this.replicaState.Configuration.ContainsKey(joinView.ServerId)) {
+                return null;
+            }
+            SortedDictionary<string, Uri> newConfiguration = new SortedDictionary<string, Uri>(this.replicaState.Configuration);
+            newConfiguration.Add(joinView.ServerId, joinView.Url);
+
+            this.replicaState.ChangeToViewChange(newViewNumber, newConfiguration);
+            return null;
         }
 
         public IResponse VisitHeartBeat(HeartBeat heartBeat) {
-            throw new NotImplementedException();
+            return this.replicaState.UpdateHeartBeat(heartBeat.ServerId);
         }
 
         private IResponse ExecuteRequest(ClientRequest clientRequest, Executor clientExecutor) {
+            if (clientRequest.ViewNumber < this.replicaState.ViewNumber) {
+                // Old view
+                return null;
+            }
+
+            if (clientRequest.ViewNumber > this.replicaState.ViewNumber) {
+                // There's a higher view that I'm not in
+                this.replicaState.ChangeToInitializationState();
+                return null;
+            }
             ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(clientRequest, clientExecutor);
             if (runProcessRequestProtocol == ProcessRequest.DROP) {
                 return null;
@@ -88,6 +142,25 @@ namespace XuLiskov.StateProcessor {
                     }
                     return ProcessRequest.LAST_EXECUTION;
                 }
+
+                // Execute the requests in client's casual order
+                if (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
+                    if (!this.replicaState.HandlersClient.ContainsKey(clientRequest.ClientId)) {
+                        this.replicaState.HandlersClient.TryAdd(
+                            clientRequest.ClientId,
+                            new EventWaitHandle(false, EventResetMode.ManualReset));
+                    }
+
+                    this.replicaState.HandlersClient.TryGetValue(
+                        clientRequest.ClientId,
+                        out EventWaitHandle myHandler);
+                    while (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
+                        if (clientRequest.RequestNumber > clientResponse.Item1 + 1) {
+                            return ProcessRequest.DROP;
+                        }
+                        myHandler?.WaitOne();
+                    }
+                }
             } else {
                 // Not in dictionary... Add with value as null
                 this.replicaState.ClientTable.Add(clientRequest.ClientId, new Tuple<int, ClientResponse>(-1, null));
@@ -97,13 +170,18 @@ namespace XuLiskov.StateProcessor {
             this.replicaState.ClientTable[clientRequest.ClientId] =
                 new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientExecutor);
 
-            // Execute in a new thread
-            Task.Factory.StartNew(() => clientExecutor.Execute(this.replicaState.RequestsExecutor));
+            // Execute request
+            clientExecutor.Execute(this.replicaState.RequestsExecutor);
 
-            // wait execution
-            clientExecutor.Executed.WaitOne();
+            // Notify threads waiting
+            this.replicaState.HandlersClient[clientRequest.ClientId].Set();
+            this.replicaState.HandlersClient[clientRequest.ClientId].Reset();
 
             return ProcessRequest.LAST_EXECUTION;
+        }
+
+        public override string ToString() {
+            return "Normal";
         }
     }
 }
