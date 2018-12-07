@@ -177,7 +177,7 @@ namespace XuLiskov {
 
         public void ChangeToViewChange(int newViewNumber, SortedDictionary<string, Uri> configuration) {
             lock (this.State) {
-                if (!(this.State is ViewChangeMessageProcessor)) {
+                if (!(this.State is ViewChangeMessageProcessor) && !(this.State is InitializationStateMessageProcessor)) {
                     this.State = new ViewChangeMessageProcessor(this.MessageServiceClient, this, newViewNumber, configuration);
                     this.HandlerStateChanged.Set();
                     this.HandlerStateChanged.Reset();

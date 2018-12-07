@@ -25,6 +25,10 @@ namespace StateMachineReplication {
             return status;
         }
 
+        public bool QueueWhenFrozen() {
+            return false;
+        }
+
         public IResponse ProcessRequest(IMessage message) {
             return message.Accept(this.ReplicaState.State);
         }

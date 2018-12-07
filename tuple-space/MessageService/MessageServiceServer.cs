@@ -16,15 +16,22 @@ namespace MessageService {
         private readonly Random seedRandom;
 
         private bool frozen;
+        private int frozenRequests;
 
-        private readonly ConcurrentDictionary<IMessage, AutoResetEvent> handlers;
+        private int IncrementFrozenRequests() { return Interlocked.Increment(ref this.frozenRequests); }
+        private int DecrementFrozenRequests() { return Interlocked.Decrement(ref this.frozenRequests); }
+        private readonly EventWaitHandle frozenRequestsHandler;
+
+        private readonly EventWaitHandle handler;
+        
 
         public MessageServiceServer(IProtocol protocol, int minDelay, int maxDelay) {
             this.protocol = protocol;
             this.minDelay = minDelay;
             this.maxDelay = maxDelay;
             this.frozen = false;
-            this.handlers = new ConcurrentDictionary<IMessage, AutoResetEvent>();
+            this.handler = new EventWaitHandle(false, EventResetMode.ManualReset);
+            this.frozenRequestsHandler = new EventWaitHandle(false, EventResetMode.ManualReset);
 
             this.seedRandom = new Random();
 
@@ -42,29 +49,47 @@ namespace MessageService {
 
             Thread.Sleep(delay);
 
-            if (frozen) {
-                AutoResetEvent myHandler = new AutoResetEvent(false);
-                this.handlers.TryAdd(message, myHandler);
-                while (frozen) {
-                    myHandler.WaitOne();
-                }
-                this.handlers.TryRemove(message, out myHandler);
-            }
+            IResponse response = null;
+            if (this.protocol.QueueWhenFrozen()) {
+                if (frozen) {
+                    this.IncrementFrozenRequests();
+                    while (this.frozen) {
+                        this.handler.WaitOne();
+                    }
 
-            IResponse response = this.protocol.ProcessRequest(message);
+                    response = this.protocol.ProcessRequest(message);
+
+                    this.DecrementFrozenRequests();
+                    this.frozenRequestsHandler.Set();
+                    this.frozenRequestsHandler.Reset();
+                } else {
+                    while (this.frozenRequests > 0) {
+                        this.frozenRequestsHandler.WaitOne();
+                    }
+
+                    response = this.protocol.ProcessRequest(message);
+                }
+            } else {
+                while (this.frozen) {
+                    this.handler.WaitOne();
+                }
+
+                response = this.protocol.ProcessRequest(message);
+            }
+            
             Log.Debug($"Response: {response}");
             return response;
         }
 
         public void Freeze() {
+            frozenRequests = 0;
             this.frozen = true;
         }
 
         public void Unfreeze() {
             this.frozen = false;
-            foreach (AutoResetEvent handler in this.handlers.Values) {
-                handler.Set();
-            }
+            this.handler.Set();
+            this.handler.Reset();
         }
 
         public override object InitializeLifetimeService() {

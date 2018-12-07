@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using MessageService.Serializable;
@@ -18,12 +19,18 @@ namespace MessageService {
         void ExecuteUnlock(UnlockExecutor unlockExecutor);
     }
 
+    [Serializable]
     public abstract class Executor : ClientResponse {
+        [NonSerialized] private AutoResetEvent executed;
+
         public string ClientId { get; set; }
         public string Tuple { get; set; }
         public new int RequestNumber { get; set; }
         public int OpNumber { get; set; }
-        public AutoResetEvent Executed { get; set; }
+        public AutoResetEvent Executed {
+            get => this.executed;
+            set => this.executed = value;
+        }
         public bool AddedToQueue { get; set; }
 
         protected Executor(ClientRequest clientRequest) {
@@ -46,6 +53,7 @@ namespace MessageService {
         public abstract void Execute(IExecutorVisitor visitor);
     }
 
+    [Serializable]
     public class AddExecutor : Executor {
         public AddExecutor(ClientRequest clientRequest) : base(clientRequest) { }
 
@@ -57,6 +65,7 @@ namespace MessageService {
         }
     }
 
+    [Serializable]
     public class TakeExecutor : Executor {
         public TakeExecutor(ClientRequest clientRequest) : base(clientRequest) { }
 
@@ -68,6 +77,7 @@ namespace MessageService {
         }
     }
 
+    [Serializable]
     public class ReadExecutor : Executor {
         public ReadExecutor(ClientRequest clientRequest) : base(clientRequest) { }
 
@@ -103,11 +113,13 @@ namespace MessageService {
     }
 
     // XL --------------------------------------------------------------------------------
+    [Serializable]
     public abstract class ExecutorXL : Executor {
         protected ExecutorXL(ClientRequest clientRequest) 
             : base(clientRequest) { }
     }
 
+    [Serializable]
     public class GetAndLockExecutor : Executor {
         public GetAndLockExecutor(ClientRequest clientRequest) : base(clientRequest) { }
 
@@ -117,6 +129,7 @@ namespace MessageService {
         }
     }
 
+    [Serializable]
     public class UnlockExecutor : Executor {
         public UnlockExecutor(ClientRequest clientRequest) : base(clientRequest) { }
 

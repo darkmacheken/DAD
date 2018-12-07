@@ -25,8 +25,6 @@ namespace XuLiskov {
             this.UpdateClientTable(addExecutor, clientResponse);
             this.replicaState.IncrementCommitNumber();
 
-            // Signal waiting thread that the execution is done
-            addExecutor.Executed.Set();
         }
         
         public void ExecuteTake(TakeExecutor takeExecutor) {
@@ -47,8 +45,6 @@ namespace XuLiskov {
             this.UpdateClientTable(takeExecutor, clientResponse);
             this.replicaState.IncrementCommitNumber();
 
-            // Signal waiting thread that the execution is done
-            takeExecutor.Executed.Set();
         }
 
         public void ExecuteRead(ReadExecutor readExecutor) {
@@ -67,8 +63,6 @@ namespace XuLiskov {
             this.UpdateClientTable(readExecutor, clientResponse);
             this.replicaState.IncrementCommitNumber();
 
-            // Signal waiting thread that the execution is done
-            readExecutor.Executed.Set();
         }
 
         public void ExecuteGetAndLock(GetAndLockExecutor getAndLockExecutor) {
@@ -93,8 +87,6 @@ namespace XuLiskov {
             this.UpdateClientTable(getAndLockExecutor, clientResponse);
             this.replicaState.IncrementCommitNumber();
 
-            // Signal waiting thread that the execution is done
-            getAndLockExecutor.Executed.Set();
         }
 
         public void ExecuteUnlock(UnlockExecutor unlockExecutor) {
@@ -110,8 +102,6 @@ namespace XuLiskov {
             UpdateClientTable(unlockExecutor, clientResponse);
             this.replicaState.IncrementCommitNumber();
 
-            // Signal waiting thread that the execution is done
-            unlockExecutor.Executed.Set();
         }
 
         private void UpdateClientTable(Executor executor, ClientResponse clientResponse) {

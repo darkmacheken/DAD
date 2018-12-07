@@ -25,6 +25,10 @@ namespace XuLiskov {
             return status;
         }
 
+        public bool QueueWhenFrozen() {
+            return true;
+        }
+
         public IResponse ProcessRequest(IMessage message) {
             return message.Accept(this.ReplicaState.State);
         }

@@ -174,10 +174,13 @@ namespace XuLiskov.StateProcessor {
                 ConfigurationUtils.CompareConfigurations(doViewChange.Configuration, this.configuration)) {
                 Interlocked.Increment(ref this.messagesDoViewChange);
 
-                if (doViewChange.CommitNumber > this.bestDoViewChange.CommitNumber) {
+                if (doViewChange.OldViewNumber == this.bestDoViewChange.OldViewNumber &&
+                    doViewChange.CommitNumber > this.bestDoViewChange.CommitNumber) {
                     this.bestDoViewChange = doViewChange;
                 }
-
+                if (doViewChange.OldViewNumber > this.bestDoViewChange.OldViewNumber) {
+                    this.bestDoViewChange = doViewChange;
+                }
 
                 this.CheckNumberAndSetNewConfiguration();
             }
@@ -212,7 +215,7 @@ namespace XuLiskov.StateProcessor {
                 message,
                 currentConfiguration,
                 this.replicaState.Configuration.Count / 2,
-                (int)(Timeout.TIMEOUT_VIEW_CHANGE),
+                Timeout.TIMEOUT_VIEW_CHANGE,
                 true);
 
             IResponse[] responsesVector = responses.ToArray();
@@ -259,8 +262,7 @@ namespace XuLiskov.StateProcessor {
                     this.bestDoViewChange.TupleSpace,
                     this.bestDoViewChange.ClientTable,
                     this.bestDoViewChange.CommitNumber);
-                Task.Factory.StartNew(() =>
-                    this.messageServiceClient.RequestMulticast(message, replicasUrl, replicasUrl.Length, -1, false));
+                this.messageServiceClient.RequestMulticast(message, replicasUrl, replicasUrl.Length, -1, false);
 
                 // Set new configuration
                 this.replicaState.SetNewConfiguration(

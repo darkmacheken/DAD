@@ -104,6 +104,7 @@ namespace XuLiskov.StateProcessor {
         private IResponse ExecuteRequest(ClientRequest clientRequest, Executor clientExecutor) {
             if (clientRequest.ViewNumber < this.replicaState.ViewNumber) {
                 // Old view
+                Log.Debug("ExecuteRequest: DROP - old view");
                 return null;
             }
 
@@ -130,16 +131,13 @@ namespace XuLiskov.StateProcessor {
                 if (clientResponse == null || clientResponse.Item1 < 0 ||
                     clientRequest.RequestNumber < clientResponse.Item1) {
                     // Duplicate Request: Long forgotten => drop
+                    Log.Debug($"Duplicate Request {clientRequest}: DROP");
                     return ProcessRequest.DROP;
                 }
 
                 if (clientRequest.RequestNumber == clientResponse.Item1) {
                     // Duplicate Request
-                    // If it is in execution.. wait.
-                    if (clientResponse.Item2.GetType() == typeof(Executor)) {
-                        Executor executor = (Executor)clientResponse.Item2;
-                        executor.Executed.WaitOne();
-                    }
+                    Log.Debug($"Duplicate Request {clientRequest}: LAST_EXECUTION");
                     return ProcessRequest.LAST_EXECUTION;
                 }
 

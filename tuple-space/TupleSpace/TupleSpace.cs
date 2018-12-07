@@ -124,7 +124,8 @@ namespace TupleSpace {
         public bool UnlockAndTake(string clientId, string tupleString) {
             /* unlock and take are "atomic" */
             if (!this.GetLockedTuplesByClient(clientId, out List<Tuple> lockedTuples)) {
-                return false;
+                this.Tuples.Remove(new Tuple(tupleString));
+                return true;
             }
             
             lock (this.Tuples) {

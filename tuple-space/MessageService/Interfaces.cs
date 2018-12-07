@@ -58,5 +58,7 @@ namespace MessageService {
         void Init(MessageServiceClient messageServiceClient, Uri url, string serverId);
 
         string Status();
+
+        bool QueueWhenFrozen();
     }
 }
