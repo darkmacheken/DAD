@@ -141,24 +141,6 @@ namespace XuLiskovAdvanced.StateProcessor {
                     return ProcessRequest.LAST_EXECUTION;
                 }
 
-                // Execute the requests in client's casual order
-                if (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
-                    if (!this.replicaState.HandlersClient.ContainsKey(clientRequest.ClientId)) {
-                        this.replicaState.HandlersClient.TryAdd(
-                            clientRequest.ClientId,
-                            new EventWaitHandle(false, EventResetMode.ManualReset));
-                    }
-
-                    this.replicaState.HandlersClient.TryGetValue(
-                        clientRequest.ClientId,
-                        out EventWaitHandle myHandler);
-                    while (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
-                        if (clientRequest.RequestNumber > clientResponse.Item1 + 1) {
-                            return ProcessRequest.DROP;
-                        }
-                        myHandler?.WaitOne();
-                    }
-                }
             } else {
                 // Not in dictionary... Add with value as null
                 this.replicaState.ClientTable.Add(clientRequest.ClientId, new Tuple<int, ClientResponse>(-1, null));
@@ -173,6 +155,8 @@ namespace XuLiskovAdvanced.StateProcessor {
             this.replicaState.HandlersClient[clientRequest.ClientId].Reset();
 
             if (this.replicaState.ClientTable[clientRequest.ClientId].Item1 != clientRequest.RequestNumber) {
+                Log.Debug($"Drop: client request is different. {this.replicaState.ClientTable[clientRequest.ClientId].Item1}" +
+                          $" != {clientRequest.RequestNumber}");
                 return ProcessRequest.DROP;
             }
 

@@ -29,10 +29,7 @@ namespace XuLiskovAdvanced {
         
         public void ExecuteTake(TakeExecutor takeExecutor) {
             Log.Debug($"Requesting Take({takeExecutor.Tuple}) to Tuple Space.");
-            if (!this.replicaState.TupleSpace.UnlockAndTake(takeExecutor.ClientId, takeExecutor.Tuple)) {
-                takeExecutor.Executed.Set();
-                return;
-            }
+            this.replicaState.TupleSpace.UnlockAndTake(takeExecutor.ClientId, takeExecutor.Tuple);
 
             int viewNumber = this.replicaState.ViewNumber;
 
@@ -71,7 +68,6 @@ namespace XuLiskovAdvanced {
 
             if (tuples == null) {
                 // Got refused
-                getAndLockExecutor.Executed.Set();
                 return;
             }
 

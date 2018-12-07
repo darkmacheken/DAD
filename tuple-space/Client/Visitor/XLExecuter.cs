@@ -133,10 +133,12 @@ namespace Client.Visitor {
 
         private IResponse[] GetAndLock(Take take) {
             while (true) {
+                int getAndLockRequestNumber = this.client.GetRequestNumber();
+                int unlockRequestNumber = 0;
                 GetAndLockRequest getAndLockRequest = new GetAndLockRequest(
                     this.client.ViewNumber,
                     this.client.Id,
-                    this.client.GetRequestNumber(),
+                    getAndLockRequestNumber,
                     take.Tuple);
                 IResponse[] responses = { };
 
@@ -169,12 +171,15 @@ namespace Client.Visitor {
                     if (responses.Length >= (numberOfLockedRequests / 2) + 1) {
                         continue;
                     }
-
+                    
+                    if (this.client.RequestNumber == getAndLockRequestNumber) {
+                        unlockRequestNumber = this.client.GetRequestNumber();
+                    }
                     // The majority didn't lock so it's needed to unlock
                     UnlockRequest unlockRequest = new UnlockRequest(
                         this.client.ViewNumber,
                         this.client.Id,
-                        this.client.GetRequestNumber());
+                        unlockRequestNumber);
 
                     // Unlock
                     this.messageServiceClient.RequestMulticast(

@@ -55,6 +55,9 @@ namespace StateMachineReplication.StateProcessor {
             // Start the view change protocol
             Task.Factory.StartNew(this.MulticastStartViewChange);
 
+            // Stay in this state for a timeout
+            Task.Factory.StartNew(this.StartTimeout);
+
         }
 
         public ViewChangeMessageProcessor(
@@ -81,6 +84,9 @@ namespace StateMachineReplication.StateProcessor {
                 this.replicaState.CommitNumber);
 
             Log.Info("Changed to View Change State.");
+
+            // Stay in this state for a timeout
+            Task.Factory.StartNew(this.StartTimeout);
         }
 
         public ViewChangeMessageProcessor(
@@ -107,6 +113,9 @@ namespace StateMachineReplication.StateProcessor {
                 this.replicaState.CommitNumber);
 
             Log.Info("Changed to View Change State.");
+
+            // Stay in this state for a timeout
+            Task.Factory.StartNew(this.StartTimeout);
 
         }
 
@@ -280,6 +289,15 @@ namespace StateMachineReplication.StateProcessor {
                     this.bestDoViewChange.CommitNumber);
 
                 this.replicaState.ChangeToRecoveryState();
+            }
+        }
+
+        private void StartTimeout() {
+            Thread.Sleep((int)(Timeout.TIMEOUT_VIEW_CHANGE));
+            if (this.Equals(this.replicaState.State)) {
+                // View Change was not successful, return to normal
+                Log.Debug("View Change was not successful.");
+                this.replicaState.ChangeToNormalState();
             }
         }
 

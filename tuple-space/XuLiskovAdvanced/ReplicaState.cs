@@ -104,10 +104,10 @@ namespace XuLiskovAdvanced {
                             this.ReplicasUrl.Count,
                             -1,
                             false);
-                        IResponse[] filteredResponseses = responses.ToArray()
+                        IResponse[] filteredResponses = responses.ToArray()
                             .Where(response => ((HeartBeatResponse) response).ViewNumber > ViewNumber)
                             .ToArray();
-                        if (filteredResponseses.Length > 0) {
+                        if (filteredResponses.Length > 0) {
                             this.ChangeToInitializationState();
                         }
                     });

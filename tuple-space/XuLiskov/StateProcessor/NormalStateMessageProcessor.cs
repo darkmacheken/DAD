@@ -140,25 +140,6 @@ namespace XuLiskov.StateProcessor {
                     Log.Debug($"Duplicate Request {clientRequest}: LAST_EXECUTION");
                     return ProcessRequest.LAST_EXECUTION;
                 }
-
-                // Execute the requests in client's casual order
-                if (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
-                    if (!this.replicaState.HandlersClient.ContainsKey(clientRequest.ClientId)) {
-                        this.replicaState.HandlersClient.TryAdd(
-                            clientRequest.ClientId,
-                            new EventWaitHandle(false, EventResetMode.ManualReset));
-                    }
-
-                    this.replicaState.HandlersClient.TryGetValue(
-                        clientRequest.ClientId,
-                        out EventWaitHandle myHandler);
-                    while (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
-                        if (clientRequest.RequestNumber > clientResponse.Item1 + 1) {
-                            return ProcessRequest.DROP;
-                        }
-                        myHandler?.WaitOne();
-                    }
-                }
             } else {
                 // Not in dictionary... Add with value as null
                 this.replicaState.ClientTable.Add(clientRequest.ClientId, new Tuple<int, ClientResponse>(-1, null));
