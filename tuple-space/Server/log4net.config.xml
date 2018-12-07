@@ -13,12 +13,18 @@
     <level value="OFF"/>
   </logger>
   <logger name="StateMachineReplication">
-    <level value="ERROR"/>
-  </logger>
-  <logger name="XuLiskov">
     <level value="DEBUG"/>
   </logger>
-  <logger name="TupleSpace">
+  <logger name="XuLiskov">
+    <level value="OFF"/>
+  </logger>
+  <logger name="StateMachineReplicationAdvanced">
+    <level value="OFF"/>
+  </logger>
+  <logger name="XuLiskovAdvanced">
+    <level value="OFF"/>
+  </logger>
+  <logger name="TupleSpaceAdvanced">
     <level value="OFF"/>
   </logger>
 </log4net>

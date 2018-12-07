@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
-using XuLiskov.StateProcessor;
+using XuLiskovAdvanced.StateProcessor;
 using Timeout = MessageService.Timeout;
 
-namespace XuLiskov {
+namespace XuLiskovAdvanced {
     public class ReplicaState {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(ReplicaState));
 
@@ -25,7 +25,7 @@ namespace XuLiskov {
         public string Manager { get; set; }
 
         public Dictionary<string, Tuple<int, ClientResponse>> ClientTable { get; }
-        
+
         public IMessageXLVisitor State { get; set; }
 
         // Tuple Space
@@ -98,12 +98,18 @@ namespace XuLiskov {
                         continue;
                     }
                     Task.Factory.StartNew(() => {
-                        this.MessageServiceClient.RequestMulticast(
+                        IResponses responses = this.MessageServiceClient.RequestMulticast(
                             new HeartBeat(this.ServerId),
                             this.ReplicasUrl.ToArray(),
                             this.ReplicasUrl.Count,
                             -1,
                             false);
+                        IResponse[] filteredResponseses = responses.ToArray()
+                            .Where(response => ((HeartBeatResponse) response).ViewNumber > ViewNumber)
+                            .ToArray();
+                        if (filteredResponseses.Length > 0) {
+                            this.ChangeToInitializationState();
+                        }
                     });
                 }
             });

@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F4029D6B-A26A-4683-8B8E-A53F005797AE}</ProjectGuid>
+    <ProjectGuid>{BA1545BE-E24A-4B05-A58B-F97DB60E1F5C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>XuLiskov</RootNamespace>
@@ -31,7 +31,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+    <Reference Include="log4net">
       <HintPath>..\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
@@ -54,16 +54,13 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MessageService\MessageService.csproj">
-      <Project>{13222cd1-28c6-4869-a653-a11cf61bc95a}</Project>
+      <Project>{13222CD1-28C6-4869-A653-A11CF61BC95A}</Project>
       <Name>MessageService</Name>
     </ProjectReference>
     <ProjectReference Include="..\TupleSpace\TupleSpace.csproj">
-      <Project>{f3fb05ed-40a7-4c96-b94b-b926893cff7c}</Project>
+      <Project>{F3FB05ED-40A7-4C96-B94B-B926893CFF7C}</Project>
       <Name>TupleSpace</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

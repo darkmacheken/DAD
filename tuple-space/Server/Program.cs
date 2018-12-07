@@ -1,12 +1,13 @@
 ﻿using System;
 
 using MessageService;
-
 using StateMachineReplication;
+using StateMachineReplicationAdvanced;
 using XuLiskov;
+using XuLiskovAdvanced;
 
-namespace Server
-{
+
+namespace Server {
     public static class Program {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(Program));
 
@@ -24,9 +25,15 @@ namespace Server
             if (protocol.Equals("SMR")) {
                 Log.Info("Using State Machine Replication protocol.");
                 protocolToUse = new SMRProtocol();
-            } else if(protocol.Equals("XL")) {
+            } else if (protocol.Equals("SMRA")) {
+                Log.Info("Using State Machine Replication Advanced protocol.");
+                protocolToUse = new SMRAProtocol();
+            } else if (protocol.Equals("XL")) {
                 Log.Info("Using Xu-Liskov protocol.");
                 protocolToUse = new XLProtocol();
+            } else if(protocol.Equals("XLA")) {
+                Log.Info("Using Xu-Liskov Advanced protocol.");
+                protocolToUse = new XLAProtocol();
             } else {
                 Log.Fatal("Unknown protocol.");
                 Environment.Exit(1);

@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("StateMachineReplication")]
+[assembly: AssemblyTitle("XuLiskovAdvanced")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("StateMachineReplication")]
+[assembly: AssemblyProduct("XuLiskovAdvanced")]
 [assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("e8251d83-5c96-45c2-8798-0a15b498f016")]
+[assembly: Guid("f4029d6b-a26a-4683-8b8e-a53f005797ae")]
 
 // Version information for an assembly consists of the following four values:
 //

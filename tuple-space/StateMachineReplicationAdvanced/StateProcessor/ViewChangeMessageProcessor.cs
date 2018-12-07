@@ -9,7 +9,7 @@ using MessageService.Visitor;
 using StateMachineReplication.Utils;
 using Timeout = MessageService.Timeout;
 
-namespace StateMachineReplication.StateProcessor {
+namespace StateMachineReplicationAdvanced.StateProcessor {
     public class ViewChangeMessageProcessor : IMessageSMRVisitor {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(ViewChangeMessageProcessor));
 
@@ -55,6 +55,8 @@ namespace StateMachineReplication.StateProcessor {
             // Start the view change protocol
             Task.Factory.StartNew(this.MulticastStartViewChange);
 
+            // Stay in this state for a timeout
+            Task.Factory.StartNew(this.StartTimeout);
         }
 
         public ViewChangeMessageProcessor(
@@ -81,6 +83,9 @@ namespace StateMachineReplication.StateProcessor {
                 this.replicaState.CommitNumber);
 
             Log.Info("Changed to View Change State.");
+
+            // Stay in this state for a timeout
+            Task.Factory.StartNew(this.StartTimeout);
         }
 
         public ViewChangeMessageProcessor(
@@ -108,6 +113,8 @@ namespace StateMachineReplication.StateProcessor {
 
             Log.Info("Changed to View Change State.");
 
+            // Stay in this state for a timeout
+            Task.Factory.StartNew(this.StartTimeout);
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
@@ -280,6 +287,15 @@ namespace StateMachineReplication.StateProcessor {
                     this.bestDoViewChange.CommitNumber);
 
                 this.replicaState.ChangeToRecoveryState();
+            }
+        }
+
+        private void StartTimeout() {
+            Thread.Sleep((int) (Timeout.TIMEOUT_VIEW_CHANGE));
+            if (this.Equals(this.replicaState.State)) {
+                // View Change was not successful, return to normal
+                Log.Debug("View Change was not successful.");
+                this.replicaState.ChangeToNormalState();
             }
         }
 

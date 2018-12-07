@@ -62,12 +62,20 @@
       <Project>{829ac545-bc95-43e8-82e6-8001c5c26c1f}</Project>
       <Name>PuppetMasterService</Name>
     </ProjectReference>
+    <ProjectReference Include="..\StateMachineReplicationAdvanced\StateMachineReplicationAdvanced.csproj">
+      <Project>{507E8427-542F-4BBC-97BE-F047A8EE3CE6}</Project>
+      <Name>StateMachineReplicationAdvanced</Name>
+    </ProjectReference>
     <ProjectReference Include="..\StateMachineReplication\StateMachineReplication.csproj">
-      <Project>{507e8427-542f-4bbc-97be-f047a8ee3ce6}</Project>
+      <Project>{E8251D83-5C96-45C2-8798-0A15B498F016}</Project>
       <Name>StateMachineReplication</Name>
     </ProjectReference>
+    <ProjectReference Include="..\XuLiskovAdvanced\XuLiskovAdvanced.csproj">
+      <Project>{F4029D6B-A26A-4683-8B8E-A53F005797AE}</Project>
+      <Name>XuLiskovAdvanced</Name>
+    </ProjectReference>
     <ProjectReference Include="..\XuLiskov\XuLiskov.csproj">
-      <Project>{f4029d6b-a26a-4683-8b8e-a53f005797ae}</Project>
+      <Project>{BA1545BE-E24A-4B05-A58B-F97DB60E1F5C}</Project>
       <Name>XuLiskov</Name>
     </ProjectReference>
   </ItemGroup>
