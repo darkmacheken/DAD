@@ -254,11 +254,13 @@ namespace MessageService.Serializable {
 
     [Serializable]
     public class GetAndLockResponse : ClientResponse {
+        public string ServerId { get; set; }
         public List<string> Tuples { get; set; }
 
-        public GetAndLockResponse(int requestNumber, int viewNumber, List<string> tuples ) : 
+        public GetAndLockResponse(string serverId, int requestNumber, int viewNumber, List<string> tuples) : 
             base(requestNumber, viewNumber) {
             this.Tuples = tuples;
+            this.ServerId = serverId;
         }
 
         public override string ToString() {

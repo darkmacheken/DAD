@@ -132,10 +132,9 @@ namespace TupleSpace {
                 foreach (Tuple tuple in lockedTuples) {
                     tuple.Locked = false;
                 }
-                Tuple tupleToRemove = new Tuple(tupleString);
-                this.Tuples.Remove(tupleToRemove);
+                this.Tuples.Remove(new Tuple(tupleString));
             }
-            if (!this.LockedTuples.TryRemove(clientId, out List<Tuple> tupleValues)) {
+            if (!this.LockedTuples.TryRemove(clientId, out List<Tuple> _)) {
                 return false;
             }
 

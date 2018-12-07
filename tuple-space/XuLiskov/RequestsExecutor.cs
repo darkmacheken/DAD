@@ -84,6 +84,7 @@ namespace XuLiskov {
             int viewNumber = this.replicaState.ViewNumber;
 
             GetAndLockResponse clientResponse = new GetAndLockResponse(
+                this.replicaState.ServerId,
                 getAndLockExecutor.RequestNumber, 
                 viewNumber, 
                 tuples);

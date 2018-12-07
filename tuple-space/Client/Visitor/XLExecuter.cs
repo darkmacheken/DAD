@@ -142,9 +142,10 @@ namespace Client.Visitor {
 
                 while (this.client.ViewServers.Length != responses.Length) {
                     int numberOfLockedRequests = this.client.ViewServers.Length;
+                    Uri[] servers = this.client.ViewServers;
                     responses = this.messageServiceClient.RequestMulticast(
                         getAndLockRequest,
-                        this.client.ViewServers,
+                        servers,
                         numberOfLockedRequests,
                         Timeout.TIMEOUT_XL_CLIENT,
                         true).ToArray();
@@ -178,10 +179,10 @@ namespace Client.Visitor {
                     // Unlock
                     this.messageServiceClient.RequestMulticast(
                         unlockRequest,
-                        this.client.ViewServers,
+                        servers,
                         numberOfLockedRequests,
                         -1,
-                        false).ToArray();
+                        false);
                     break;
                 }
 
