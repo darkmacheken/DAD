@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -33,8 +33,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Remoting" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -45,9 +49,40 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ScriptStructure\Add.cs" />
+    <Compile Include="ScriptStructure\Block.cs" />
+    <Compile Include="ScriptStructure\Command.cs" />
+    <Compile Include="ScriptStructure\Read.cs" />
+    <Compile Include="ScriptStructure\RepeatBlock.cs" />
+    <Compile Include="ScriptStructure\Script.cs" />
+    <Compile Include="ScriptStructure\Take.cs" />
+    <Compile Include="ScriptStructure\Wait.cs" />
+    <Compile Include="Client.cs" />
+    <Compile Include="Parser.cs" />
+    <Compile Include="ScriptStructure\BasicNode.cs" />
+    <Compile Include="Visitor\SMRExecuter.cs" />
+    <Compile Include="Visitor\Writer.cs" />
+    <Compile Include="Visitor\IBasicVisitor.cs" />
+    <Compile Include="Exceptions\IncorrectCommandException.cs" />
+    <Compile Include="Exceptions\BlockEndMissingException.cs" />
+    <Compile Include="Visitor\XLExecuter.cs" />
+    <Compile Include="ListUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="Client.csproj" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\MessageService\MessageService.csproj">
+      <Project>{13222cd1-28c6-4869-a653-a11cf61bc95a}</Project>
+      <Name>MessageService</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="log4net.config.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E00B43C7-21CD-4D78-B771-2A88AB9DE81D}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PuppetMaster</RootNamespace>
+    <AssemblyName>PuppetMaster</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ExternalConsole>true</ExternalConsole>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ExternalConsole>true</ExternalConsole>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Runtime.Remoting" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CommandStructure\Exit.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="CommandStructure\Command.cs" />
+    <Compile Include="CommandStructure\Script.cs" />
+    <Compile Include="CommandStructure\CreateClient.cs" />
+    <Compile Include="CommandStructure\CreateServer.cs" />
+    <Compile Include="CommandStructure\Status.cs" />
+    <Compile Include="CommandStructure\DebuggingCommand.cs" />
+    <Compile Include="CommandStructure\Freeze.cs" />
+    <Compile Include="CommandStructure\Unfreeze.cs" />
+    <Compile Include="CommandStructure\Crash.cs" />
+    <Compile Include="Parser.cs" />
+    <Compile Include="CommandStructure\Wait.cs" />
+    <Compile Include="Exceptions\IncorrectCommandException.cs" />
+    <Compile Include="Visitor\IBasicVisitor.cs" />
+    <Compile Include="Visitor\Interpreter.cs" />
+    <Compile Include="Visitor\Writer.cs" />
+    <Compile Include="CommandStructure\BasicNode.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PuppetMasterService\PuppetMasterService.csproj">
+      <Project>{829ac545-bc95-43e8-82e6-8001c5c26c1f}</Project>
+      <Name>PuppetMasterService</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

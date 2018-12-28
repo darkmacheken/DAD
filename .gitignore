@@ -1,2 +1,6 @@
 tuple-space/.vs/
 tuple-space/Client/obj/
+tuple-space/**/obj
+tuple-space/**/bin/
+
+*.cache

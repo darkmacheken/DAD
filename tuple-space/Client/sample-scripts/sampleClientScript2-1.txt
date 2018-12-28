@@ -1,0 +1,4 @@
+begin-repeat 100
+add <"a">
+take <"b">
+end-repeat
