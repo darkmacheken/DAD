@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace MessageService {
     public class Responses : IResponses {
@@ -19,6 +18,10 @@ namespace MessageService {
 
         public int Count() {
             return this.responses.Count;
+        }
+
+        public override string ToString() {
+            return responses.ToString();
         }
     }
 }

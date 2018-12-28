@@ -9,4 +9,22 @@
     <level value="ALL" />
     <appender-ref ref="Console" />
   </root>
+  <logger name="MessageService">
+    <level value="OFF"/>
+  </logger>
+  <logger name="StateMachineReplication">
+    <level value="OFF"/>
+  </logger>
+  <logger name="XuLiskov">
+    <level value="OFF"/>
+  </logger>
+  <logger name="StateMachineReplicationAdvanced">
+    <level value="DEBUG"/>
+  </logger>
+  <logger name="XuLiskovAdvanced">
+    <level value="OFF"/>
+  </logger>
+  <logger name="TupleSpace">
+    <level value="OFF"/>
+  </logger>
 </log4net>

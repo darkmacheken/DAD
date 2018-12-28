@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace TupleSpace {
 
+    [Serializable]
     public class Tuple {
         // A tuple consists in a list of fields.
         public List<IField> Fields { get; set; }
@@ -59,6 +60,10 @@ namespace TupleSpace {
                 return false;
             }
             return true;
+        }
+
+        public override bool Equals(object obj) {
+            return obj is Tuple tuple && this.stringTuple.Equals(tuple.ToString());
         }
 
         public override string ToString() {
@@ -134,6 +139,7 @@ namespace TupleSpace {
         object Value { get; set; }
     }
 
+    [Serializable]
     public class Field<TDataType> : IField {
 
         public Field(TDataType value) {

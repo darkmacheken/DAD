@@ -4,7 +4,7 @@ namespace Client.ScriptStructure {
     public abstract class Block : BasicNode {
         protected readonly List<BasicNode> nodes;
 
-        private Parser parser;
+        private readonly Parser parser;
 
         public Block() {
             this.nodes = new List<BasicNode>();

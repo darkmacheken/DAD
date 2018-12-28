@@ -9,4 +9,7 @@
     <level value="INFO" />
     <appender-ref ref="Console" />
   </root>
+  <logger name="MessageService">
+    <level value="OFF"/>
+  </logger>
 </log4net>

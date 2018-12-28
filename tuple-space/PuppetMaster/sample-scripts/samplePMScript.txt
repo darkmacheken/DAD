@@ -1,0 +1,7 @@
+Server s1 tcp://1.2.3.4:50001/S 10 1000
+Wait 500
+Client c1 tcp://4.5.6.7:60001/C AScriptName.txt
+Status
+Freeze s1
+Unfreeze s1
+Crash s1

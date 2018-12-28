@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Runtime.Remoting;
 using System.Threading;
 
@@ -14,11 +15,23 @@ namespace MessageService {
 
         private readonly Random seedRandom;
 
+        private bool frozen;
+        private int frozenRequests;
+
+        private int IncrementFrozenRequests() { return Interlocked.Increment(ref this.frozenRequests); }
+        private int DecrementFrozenRequests() { return Interlocked.Decrement(ref this.frozenRequests); }
+        private readonly EventWaitHandle frozenRequestsHandler;
+
+        private readonly EventWaitHandle handler;
+        
 
         public MessageServiceServer(IProtocol protocol, int minDelay, int maxDelay) {
             this.protocol = protocol;
             this.minDelay = minDelay;
             this.maxDelay = maxDelay;
+            this.frozen = false;
+            this.handler = new EventWaitHandle(false, EventResetMode.ManualReset);
+            this.frozenRequestsHandler = new EventWaitHandle(false, EventResetMode.ManualReset);
 
             this.seedRandom = new Random();
 
@@ -35,17 +48,52 @@ namespace MessageService {
             Log.Debug($"Request (Process Delay = {delay} ms) with parameters: message: {message}");
 
             Thread.Sleep(delay);
-            IResponse response = this.protocol.ProcessRequest(message);
+
+            IResponse response = null;
+            if (this.protocol.QueueWhenFrozen()) {
+                if (frozen) {
+                    this.IncrementFrozenRequests();
+                    while (this.frozen) {
+                        this.handler.WaitOne();
+                    }
+
+                    response = this.protocol.ProcessRequest(message);
+
+                    this.DecrementFrozenRequests();
+                    this.frozenRequestsHandler.Set();
+                    this.frozenRequestsHandler.Reset();
+                } else {
+                    while (this.frozenRequests > 0) {
+                        this.frozenRequestsHandler.WaitOne();
+                    }
+
+                    response = this.protocol.ProcessRequest(message);
+                }
+            } else {
+                while (this.frozen) {
+                    this.handler.WaitOne();
+                }
+
+                response = this.protocol.ProcessRequest(message);
+            }
+            
             Log.Debug($"Response: {response}");
             return response;
         }
 
         public void Freeze() {
-            throw new NotImplementedException();
+            frozenRequests = 0;
+            this.frozen = true;
         }
 
         public void Unfreeze() {
-            throw new NotImplementedException();
+            this.frozen = false;
+            this.handler.Set();
+            this.handler.Reset();
+        }
+
+        public override object InitializeLifetimeService() {
+            return null;
         }
     }
 }

@@ -1,15 +1,19 @@
-﻿using System;
+﻿
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Threading;
-
+using System.Threading.Tasks;
 using MessageService;
 using MessageService.Serializable;
 using MessageService.Visitor;
-
-using TupleSpace;
+using Timeout = MessageService.Timeout;
 
 namespace StateMachineReplication.StateProcessor {
-    public class NormalStateMessageProcessor : IMessageVisitor {
+    internal enum ProcessRequest { DROP, LAST_EXECUTION}
+
+    public class NormalStateMessageProcessor : IMessageSMRVisitor {
         private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(NormalStateMessageProcessor));
 
         private readonly MessageServiceClient messageServiceClient;
@@ -18,109 +22,81 @@ namespace StateMachineReplication.StateProcessor {
         public NormalStateMessageProcessor(ReplicaState replicaState, MessageServiceClient messageServiceClient) {
             this.messageServiceClient = messageServiceClient;
             this.replicaState = replicaState;
+
+            Log.Info("Changed to Normal State.");
         }
 
         public IResponse VisitAddRequest(AddRequest addRequest) {
             if (!this.replicaState.IAmTheLeader()) {
                 // I'm not the leader. 
-                // TODO: return who's the leader
                 return null;
             }
 
-            int runProcessRequestProtocol = this.RunProcessRequestProtocol(addRequest);
-            if (runProcessRequestProtocol < 0) { // Drop
+            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(addRequest);
+            if (runProcessRequestProtocol == ProcessRequest.DROP) {
                 return null;
-            } else if (runProcessRequestProtocol == 0) { // Return last execution's result
+            }
+
+            if (runProcessRequestProtocol == ProcessRequest.LAST_EXECUTION) {
                 return this.replicaState.ClientTable[addRequest.ClientId].Item2;
-            } else {
-                Log.Debug($"Requesting Add({addRequest.Tuple}) to Tuple Space.");
-                this.replicaState.TupleSpace.Add(addRequest.Tuple);
-
-                // increment commit number
-                int commitNumber = this.replicaState.IncrementCommitNumber();
-                int viewNumber = this.replicaState.ViewNumber;
-
-                ClientResponse clientResponse = new ClientResponse(commitNumber, viewNumber, string.Empty);
-                // update client table
-                lock (this.replicaState) {
-                    this.replicaState.ClientTable[addRequest.ClientId] = 
-                        new Tuple<int, ClientResponse>(addRequest.RequestNumber, clientResponse);
-                }
-                // commit execution
-                this.SendCommit(viewNumber, commitNumber);
-                return clientResponse;
             }
+
+            return null;
         }
 
         public IResponse VisitTakeRequest(TakeRequest takeRequest) {
             if (!this.replicaState.IAmTheLeader()) {
                 // I'm not the leader. 
-                // TODO: return who's the leader
                 return null;
             }
 
-            int runProcessRequestProtocol = this.RunProcessRequestProtocol(takeRequest);
-            if (runProcessRequestProtocol < 0) { // Drop
+            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(takeRequest);
+            if (runProcessRequestProtocol == ProcessRequest.DROP) {
                 return null;
-            } else if (runProcessRequestProtocol == 0) { // Return last execution's result
+            }
+
+            if (runProcessRequestProtocol == ProcessRequest.LAST_EXECUTION) {
                 return this.replicaState.ClientTable[takeRequest.ClientId].Item2;
-            } else {
-                Log.Debug($"Requesting Take({takeRequest.Tuple}) to Tuple Space.");
-                TupleSpace.Tuple takeTuple = this.replicaState.TupleSpace.Take(takeRequest.Tuple);
-                
-                // increment commit number
-                int commitNumber = this.replicaState.IncrementCommitNumber();
-                int viewNumber = this.replicaState.ViewNumber;
-
-                ClientResponse clientResponse= new ClientResponse(commitNumber, viewNumber, takeTuple.ToString());
-                // update client table
-                lock (this.replicaState) {
-                    this.replicaState.ClientTable[takeRequest.ClientId] = 
-                        new Tuple<int, ClientResponse>(takeRequest.RequestNumber, clientResponse);
-                }
-                // commit execution
-                this.SendCommit(viewNumber, commitNumber);
-                return clientResponse;
             }
+
+            return null;
         }
 
         public IResponse VisitReadRequest(ReadRequest readRequest) {
             if (!this.replicaState.IAmTheLeader()) {
                 // I'm not the leader. 
-                //TODO: return who's the leader
                 return null;
             }
 
-            int runProcessRequestProtocol = this.RunProcessRequestProtocol(readRequest);
-            if (runProcessRequestProtocol < 0) { // Drop
+            ProcessRequest runProcessRequestProtocol = this.RunProcessRequestProtocol(readRequest);
+            if (runProcessRequestProtocol == ProcessRequest.DROP) {
                 return null;
-            } else if (runProcessRequestProtocol == 0) { // Return last execution's result
+            }
+
+            if (runProcessRequestProtocol == ProcessRequest.LAST_EXECUTION) {
                 return this.replicaState.ClientTable[readRequest.ClientId].Item2;
-            } else {
-                Log.Debug($"Requesting Read({readRequest.Tuple}) to Tuple Space.");
-                TupleSpace.Tuple readTuple = this.replicaState.TupleSpace.Read(readRequest.Tuple);
-
-                // increment commit number
-                int commitNumber = this.replicaState.IncrementCommitNumber();
-                int viewNumber = this.replicaState.ViewNumber;
-
-                ClientResponse clientResponse = new ClientResponse(commitNumber, viewNumber, readTuple.ToString());
-                // update client table
-                lock (this.replicaState) {
-                    this.replicaState.ClientTable[readRequest.ClientId] = 
-                        new Tuple<int, ClientResponse>(readRequest.RequestNumber, clientResponse);
-                }
-                // commit execution
-                this.SendCommit(viewNumber, commitNumber);
-                return clientResponse;
             }
+
+            return null;
         }
 
         public IResponse VisitPrepareMessage(PrepareMessage prepareMessage) {
-            if (this.replicaState.OpNumber != (prepareMessage.OpNumber - 1)) {
-                // The replica isn't in sync. Some information was lost
-                // TODO: Update state. Must block until condition is met.
-                throw new NotImplementedException();
+            if (prepareMessage.ViewNumber < this.replicaState.ViewNumber) {
+                return null;
+            }
+            if (this.replicaState.OpNumber >= prepareMessage.OpNumber) {
+                return new PrepareOk(this.replicaState.ServerId, this.replicaState.ViewNumber, prepareMessage.OpNumber);
+            }
+
+            // It must wait for previous messages.
+            while (this.replicaState.OpNumber != (prepareMessage.OpNumber - 1)) {
+                if (prepareMessage.ViewNumber < this.replicaState.ViewNumber) {
+                    return null;
+                }
+                if (this.replicaState.OpNumber >= prepareMessage.OpNumber - 1) {
+                    return new PrepareOk(this.replicaState.ServerId, this.replicaState.ViewNumber, prepareMessage.OpNumber);
+                }
+                this.replicaState.HandlersPrepare.WaitOne();
             }
 
             int opNumber;
@@ -131,61 +107,147 @@ namespace StateMachineReplication.StateProcessor {
                 this.replicaState.Logger.Add(prepareMessage.ClientRequest);
             }
 
+            // Notify all threads that are waiting for new prepare messages
+            this.replicaState.HandlersPrepare.Set();
+            this.replicaState.HandlersPrepare.Reset();
+            this.replicaState.HandlersCommits.Set();
+            this.replicaState.HandlersCommits.Reset();
+
             return new PrepareOk(this.replicaState.ServerId, replicaView, opNumber);
         }
 
         public IResponse VisitCommitMessage(CommitMessage commitMessage) {
-            // Needs to wait for previous executions or request must arrive.
-            // Polling in 25ms in 25ms
-            while (this.replicaState.CommitNumber != (commitMessage.CommitNumber - 1) &&
-                   this.replicaState.OpNumber >= commitMessage.CommitNumber) {
-                Thread.Sleep(25);
-            }
+            Task.Factory.StartNew(() => {
+                if (commitMessage.CommitNumber < this.replicaState.CommitNumber &&
+                    commitMessage.ViewNumber != this.replicaState.ViewNumber &&
+                    commitMessage.ServerId != this.replicaState.Leader) {
+                    return;
+                }
 
-            ClientRequest request = this.replicaState.Logger[commitMessage.CommitNumber];
-            Log.Debug($"Requesting {request} to Tuple Space.");
+                // It must confirm that it received the prepare message.
+                while (commitMessage.CommitNumber > this.replicaState.OpNumber) {
+                    this.replicaState.HandlersCommits.WaitOne();
+                }
 
-            string result = string.Empty;
-            if (request is AddRequest) {
-                AddRequest addRequest = (AddRequest)request;
-                this.replicaState.TupleSpace.Add(addRequest.Tuple);
-            } else if (request is TakeRequest) {
-                TakeRequest takeRequest = (TakeRequest)request;
-                result = this.replicaState.TupleSpace.Take(takeRequest.Tuple).ToString();
-            } else if (request is ReadRequest) {
-                ReadRequest readRequest = (ReadRequest)request;
-                result = this.replicaState.TupleSpace.Read(readRequest.Tuple).ToString();
-            }
+                this.replicaState.ExecuteFromUntil(this.replicaState.CommitNumber, commitMessage.CommitNumber);
+            });
+            return null;
+        }
 
-
-            // increment commit number
-            int commitNumber = this.replicaState.IncrementCommitNumber();
-
-            ClientResponse clientResponse = new ClientResponse(commitNumber, commitMessage.ViewNumber, result);
-            // update client table
-            ClientRequest clientRequest = this.replicaState.Logger[commitMessage.CommitNumber];
-            lock (this.replicaState) {
-                this.replicaState.ClientTable[clientRequest.ClientId] = 
-                    new Tuple<int, ClientResponse>(clientRequest.RequestNumber, clientResponse);
+        public IResponse VisitStartViewChange(StartViewChange startViewChange) {
+            if (this.replicaState.HandlerStateChanged.WaitOne(Timeout.TIMEOUT_VIEW_CHANGE) &&
+                this.replicaState.State is ViewChangeMessageProcessor) {
+                return startViewChange.Accept(this.replicaState.State);
             }
             return null;
         }
 
-        public IResponse VisitHandShakeRequest(HandShakeRequest handShakeRequest) {
-            Uri[] viewConfiguration = this.replicaState.Configuration.Values.ToArray();
-            return new HandShakeResponse(Protocol.StateMachineReplication, this.replicaState.ViewNumber, viewConfiguration);
+        public IResponse VisitDoViewChange(DoViewChange doViewChange) {
+            if (doViewChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
+            lock (this.replicaState.State) {
+                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
+                    this.replicaState.ChangeToViewChange(doViewChange.ViewNumber, doViewChange.Configuration);
+                }
+            }
+            return doViewChange.Accept(this.replicaState.State);
         }
 
-        private int RunProcessRequestProtocol(ClientRequest clientRequest) {
+        public IResponse VisitStartChange(StartChange startChange) {
+            if (startChange.ViewNumber <= this.replicaState.ViewNumber) {
+                return null;
+            }
+            lock (this.replicaState.State) {
+                if (!(this.replicaState.State is ViewChangeMessageProcessor)) {
+                    this.replicaState.ChangeToViewChange(startChange);
+                }
+            }
+            return startChange.Accept(this.replicaState.State);
+        }
+
+        public IResponse VisitRecovery(Recovery recovery) {
+            if (this.replicaState.OpNumber < recovery.OpNumber) {
+                return new RecoveryResponse(this.replicaState.ServerId);
+            }
+
+            int count = this.replicaState.Logger.Count;
+
+            return new RecoveryResponse(
+                this.replicaState.ServerId,
+                this.replicaState.ViewNumber,
+                this.replicaState.OpNumber,
+                this.replicaState.CommitNumber,
+                this.replicaState.Logger.GetRange(recovery.OpNumber, count - recovery.OpNumber));
+        }
+
+        public IResponse VisitClientHandShakeRequest(ClientHandShakeRequest clientHandShakeRequest) {
+            Uri[] viewConfiguration = this.replicaState.Configuration.Values.ToArray();
+            return new ClientHandShakeResponse(
+                Protocol.StateMachineReplication, 
+                this.replicaState.ViewNumber, 
+                viewConfiguration,
+                this.replicaState.Configuration[this.replicaState.Leader]);
+        }
+
+        public IResponse VisitServerHandShakeRequest(ServerHandShakeRequest serverHandShakeRequest) {
+            return new ServerHandShakeResponse(this.replicaState.Configuration.Values.ToArray());
+        }
+
+        public IResponse VisitJoinView(JoinView joinView) {
+            Log.Info($"JoinView issued for server {joinView.ServerId}");
+            int newViewNumber = this.replicaState.ViewNumber + 1;
+            if (this.replicaState.Configuration.ContainsKey(joinView.ServerId)) {
+                return null;
+            }
+            SortedDictionary<string, Uri> newConfiguration = new SortedDictionary<string, Uri>(this.replicaState.Configuration);
+            newConfiguration.Add(joinView.ServerId, joinView.Url);
+
+            this.replicaState.ChangeToViewChange(newViewNumber, newConfiguration);
+            return null;
+        }
+
+        public IResponse VisitHeartBeat(HeartBeat heartBeat) {
+            this.replicaState.UpdateHeartBeat(heartBeat.ServerId);
+            return null;
+        }
+
+        private ProcessRequest RunProcessRequestProtocol(ClientRequest clientRequest) {
             if (this.replicaState.ClientTable.TryGetValue(clientRequest.ClientId, out Tuple<int, ClientResponse> clientResponse)) {
                 // Key is in the dictionary
-                if (clientResponse.Item1 < 0 ||
+                if (clientResponse == null || clientResponse.Item1 < 0 ||
                     clientRequest.RequestNumber < clientResponse.Item1) {
                     // Duplicate Request: Long forgotten => drop
-                    return -1;
-                } else if (clientRequest.RequestNumber == clientResponse.Item1) {
-                    // Duplicate Request: Last Execution => return stored value in the client table
-                    return 0;
+                    return ProcessRequest.DROP;
+                }
+
+                if (clientRequest.RequestNumber == clientResponse.Item1) {
+                    // Duplicate Request
+                    // If it is in execution.. wait.
+                    if (clientResponse.Item2.GetType() == typeof(Executor)) {
+                        Executor executor = (Executor)clientResponse.Item2;
+                        executor.Executed.WaitOne();
+                    }
+                    return ProcessRequest.LAST_EXECUTION;
+                }
+
+                // Execute the requests in client's casual order
+                if (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
+                    if (!this.replicaState.HandlersClient.ContainsKey(clientRequest.ClientId)) {
+                        this.replicaState.HandlersClient.TryAdd(
+                            clientRequest.ClientId,
+                            new EventWaitHandle(false, EventResetMode.ManualReset));
+                    }
+
+                    this.replicaState.HandlersClient.TryGetValue(
+                        clientRequest.ClientId,
+                        out EventWaitHandle myHandler);
+                    while (clientRequest.RequestNumber != clientResponse.Item1 + 1) {
+                        if (clientRequest.RequestNumber > clientResponse.Item1 + 1) {
+                            return ProcessRequest.DROP;
+                        }
+                        myHandler.WaitOne();
+                    }
                 }
             } else {
                 // Not in dictionary... Add with value as null
@@ -194,15 +256,15 @@ namespace StateMachineReplication.StateProcessor {
 
             // Send Prepare Message and waits for f replies. opNumber is the order we agreed upon.
             int opNumber = this.SendPrepareMessage(clientRequest);
+            Executor clientExecutor = ExecutorFactory.Factory(clientRequest, opNumber);
 
-            // Now we need to execute the request in our turn.
-            // Polling in 25ms in 25ms to check if last operation has been committed
-            while (this.replicaState.CommitNumber != (opNumber - 1)) {
-                Thread.Sleep(25);
-            }
+            // Add request to queue
+            OrderedQueue.AddRequestToQueue(this.replicaState, clientRequest, clientExecutor);
 
-            // We can return now, it's our turn to execute.
-            return 1;
+            // Wait execution
+            clientExecutor.Executed.WaitOne();
+
+            return ProcessRequest.LAST_EXECUTION;
         }
 
         private int SendPrepareMessage(ClientRequest clientRequest) {
@@ -211,12 +273,13 @@ namespace StateMachineReplication.StateProcessor {
             int commitNumber;
             Uri[] replicasUrls;
 
+
             lock (this.replicaState) {
                 viewNumber = this.replicaState.ViewNumber;
                 commitNumber = this.replicaState.CommitNumber;
                 opNumber = this.replicaState.IncrementOpNumberNumber();
                 this.replicaState.Logger.Add(clientRequest);
-                replicasUrls = this.replicaState.ReplicasUrls.ToArray();
+                replicasUrls = this.replicaState.ReplicasUrl.ToArray();
             }
 
             PrepareMessage prepareMessage = new PrepareMessage(
@@ -227,22 +290,14 @@ namespace StateMachineReplication.StateProcessor {
                 commitNumber);
 
             // Wait for (Number backup replicas + the leader) / 2
-            int f = (replicasUrls.Length + 1) / 2;
-            this.messageServiceClient.RequestMulticast(prepareMessage, replicasUrls, f, -1);
+            int f = this.replicaState.Configuration.Count / 2;
+            this.messageServiceClient.RequestMulticast(prepareMessage, replicasUrls, f, -1, true);
 
             return opNumber;
         }
 
-        private void SendCommit(int viewNumber, int commitNumber) {
-            Uri[] replicasUrls;
-
-            lock (this.replicaState) {
-                replicasUrls = this.replicaState.ReplicasUrls.ToArray();
-            }
-            CommitMessage commitMessage = new CommitMessage(this.replicaState.ServerId, viewNumber, commitNumber);
-
-            // Don't wait for response
-            this.messageServiceClient.RequestMulticast(commitMessage, replicasUrls, 0, -1);
+        public override string ToString() {
+            return "Normal";
         }
     }
 }

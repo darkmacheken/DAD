@@ -1,13 +1,13 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Threading;
 using System.Threading.Tasks;
 
 using log4net;
-
-using MessageService.Serializable;
 
 namespace MessageService {
     
@@ -16,7 +16,13 @@ namespace MessageService {
 
         private readonly TcpChannel channel;
 
+        private bool frozen;
+        private EventWaitHandle freezeHandler;
+
         public MessageServiceClient(Uri myUrl) {
+            this.frozen = false;
+            this.freezeHandler = new EventWaitHandle(false, EventResetMode.ManualReset);
+
             //create tcp channel
             this.channel = new TcpChannel(myUrl.Port);
             ChannelServices.RegisterChannel(this.channel, false);
@@ -24,22 +30,34 @@ namespace MessageService {
         }
 
         public MessageServiceClient(TcpChannel channel) {
+            this.frozen = false;
+            this.freezeHandler = new EventWaitHandle(false, EventResetMode.ManualReset);
+
             this.channel = channel;
         }
 
         public IResponse Request(IMessage message, Uri url) {
-            Log.Debug($"Request called with parameters: message: {message}, url: {url}");
-            MessageServiceServer server = GetRemoteMessageService(url);
-            if (server != null) {
-                return server.Request(message);
+            // block if frozen
+            this.BlockFreezeState(message);
+            try {
+                Log.Debug($"Request called with parameters: message: {message}, url: {url}");
+                MessageServiceServer server = GetRemoteMessageService(url);
+                if (server != null) {
+                    return server.Request(message);
+                }
+
+                Log.Error($"Request: Could not resolve url {url.Host}:{url.Port}");
+                return null;
+            } catch (Exception e) {
+                Log.Error(e.Message);
+                return null;
             }
-
-            Log.Error($"Request: Could not resolve url {url.Host}:{url.Port}");
-            return null;
-
         }
 
-        public IResponse Request(IMessage message, Uri url, int timeout) {
+       public IResponse Request(IMessage message, Uri url, int timeout) {
+           // block if frozen
+           this.BlockFreezeState(message);
+
             Log.Debug($"Request called with parameters: message: {message}, url: {url}, timeout: {timeout}");
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             
@@ -49,15 +67,17 @@ namespace MessageService {
                     return this.Request(message, url);
                 }
             }, cancellationTokenSource.Token);
+           try {
+               bool taskCompleted = timeout < 0 ? task.Wait(-1) : task.Wait(timeout);
 
-            bool taskCompleted = timeout < 0 ? task.Wait(-1) : task.Wait(timeout);
-
-            if (taskCompleted) {
-                return task.Result;
-            }
-
-            // Cancel task, we don't care anymore.
-            cancellationTokenSource.Cancel();
+               if (taskCompleted) {
+                   return task.Result;
+               }
+               cancellationTokenSource.Cancel();
+            } catch (Exception e) {
+               Log.Error(e.Message);
+           }
+            
             Log.Error("Request: Timeout, abort thread request.");
             return null;
         }
@@ -66,12 +86,20 @@ namespace MessageService {
             IMessage message,
             Uri[] urls,
             int numberResponsesToWait,
-            int timeout) {
+            int timeout,
+            bool notNull) {
+            // block if frozen
+            this.BlockFreezeState(message);
+
+            if (urls.Length == 0) {
+                return new Responses();
+            }
+
             Log.Debug($"Multicast Request called with parameters: message: {message}, url: {urls},"
                       + $"numberResponsesToWait: {numberResponsesToWait}, timeout: {timeout}");
 
             if (numberResponsesToWait > urls.Length) {
-                return null;
+                return new Responses();
             } else if (numberResponsesToWait < 0) {
                 numberResponsesToWait = urls.Length;
             }
@@ -83,14 +111,21 @@ namespace MessageService {
                 CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
                 // Create Task and run async
+                
                 Task<IResponse> task = Task<IResponse>.Factory.StartNew(() => {
                     using (cancellationTokenSource.Token.Register(() => Log.Debug("Task cancellation requested"))) {
                         return this.Request(message, url);
                     }
                 }, cancellationTokenSource.Token);
 
-                tasks.Add(task);
-                cancellations.Add(cancellationTokenSource);
+                lock (tasks) {
+                    tasks.Add(task);
+                }
+
+                lock (cancellations) {
+                    cancellations.Add(cancellationTokenSource);
+                }
+                
             }
 
             // Wait until numberResponsesToWait
@@ -98,54 +133,86 @@ namespace MessageService {
             CancellationTokenSource cancellationTs = new CancellationTokenSource();
             Task getResponses = Task.Factory.StartNew(
                 () => { using (cancellationTs.Token.Register(() => { MessageServiceClient.CancelSubTasks(cancellations); })) {
-                        GetResponses(responses, numberResponsesToWait, tasks, cancellations);
+                        GetResponses(responses, numberResponsesToWait, tasks, cancellations, notNull);
                     }
                 },
                 cancellationTs.Token);
 
-            bool taskCompleted = timeout < 0 ? getResponses.Wait(-1) : getResponses.Wait(timeout);
+            try {
+                bool taskCompleted = timeout < 0 ? getResponses.Wait(-1) : getResponses.Wait(timeout);
 
-            if (taskCompleted) {
-                Log.Debug($"Multicast response: {responses}");
-                return responses;
+                if (taskCompleted) {
+                    Log.Debug($"Multicast response: {responses}");
+                    return responses;
+                }
+
+                cancellationTs.Cancel();
+            } catch (Exception e) {
+                Log.Error(e.Message);
             }
-
-            // Cancel task, we don't care anymore.
-            cancellationTs.Cancel();
+            
             Log.Error("Multicast Request: Timeout, abort thread request.");
-            return null;
+            return responses;
         }
 
         private static void GetResponses(
             IResponses responses,
             int numberResponsesToWait, 
             List<Task<IResponse>> tasks, 
-            List<CancellationTokenSource> cancellations) {
+            List<CancellationTokenSource> cancellations,
+            bool notNull) {
 
-            int countMessages = 0;
-            while (countMessages < numberResponsesToWait) {
-                int index = Task.WaitAny(tasks.ToArray());
+            try {
+                int countMessages = 0;
+                while (countMessages < numberResponsesToWait) {
+                    int index = Task.WaitAny(tasks.ToArray());
+                    if (index < 0) {
+                        return;
+                    }
+                    if (notNull) {
+                        if (tasks[index].Result != null) {
+                            lock (responses) {
+                                responses.Add(tasks[index].Result);
+                                countMessages++;
+                            }
+                        }
+                    } else {
+                        lock (responses) {
+                            responses.Add(tasks[index].Result);
+                            countMessages++;
+                        }
+                    }
 
-                responses.Add(tasks[index].Result);
-                countMessages++;
+                    lock (cancellations) {
+                        // cancel task
+                        cancellations[index].Cancel();
+                        cancellations.RemoveAt(index);
+                    }
 
-                // cancel task
-                cancellations[index].Cancel();
+                    lock (tasks) {
+                        tasks.RemoveAt(index);
+                    }
+                }
 
-                // dispose task in the lists
-                tasks.RemoveAt(index);
-                cancellations.RemoveAt(index);
+                // Cancel remaining sub-tasks
+                MessageServiceClient.CancelSubTasks(cancellations);
+            } catch (Exception e) {
+                Log.Error(e.Message);
             }
 
-            // Cancel remaining sub-tasks
-            MessageServiceClient.CancelSubTasks(cancellations);
         }
 
         private static void CancelSubTasks(List<CancellationTokenSource> cancellations) {
             Log.Warn("Multicast Request: cancellation was issued. Cancel all request Tasks.");
             // cancel all other tasks
-            foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
-                cancellationTokenSource.Cancel();
+            lock (cancellations) {
+                try {
+                    foreach (CancellationTokenSource cancellationTokenSource in cancellations) {
+                        cancellationTokenSource.Cancel();
+                    }
+                } catch (Exception e) {
+                    Log.Error(e.Message);
+                }
             }
         }
 
@@ -158,11 +225,19 @@ namespace MessageService {
         }
 
         public void Freeze() {
-            throw new NotImplementedException();
+            this.frozen = true;
         }
 
         public void Unfreeze() {
-            throw new NotImplementedException();
+            this.frozen = false;
+            this.freezeHandler.Set();
+            this.freezeHandler.Reset();
+        }
+
+        private void BlockFreezeState(IMessage message) {
+            while (frozen) {
+                this.freezeHandler.WaitOne();
+            }
         }
     }
 }

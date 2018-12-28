@@ -31,12 +31,15 @@ namespace MessageService {
         /// Multicasts a request. Waits for <paramref name="numberResponsesToWait"/> and returns.
         /// If <paramref name="numberResponsesToWait"/> is less than zero, it waits for all.
         /// If <paramref name="timeout"/> is less than zero it waits indefinitely.
+        /// If <paramref name="notNull"/> is true, then it only counts messages that are not null.
         /// </summary>
-        IResponses RequestMulticast(IMessage message, Uri[] urls, int numberResponsesToWait, int timeout);
+        IResponses RequestMulticast(IMessage message, Uri[] urls, int numberResponsesToWait, int timeout, bool notNull);
     }
 
     public interface IMessage {
-        IResponse Accept(IMessageVisitor visitor);
+        IResponse Accept(IMessageSMRVisitor visitor);
+    
+        IResponse Accept(IMessageXLVisitor visitor);
     }
 
     public interface IResponse { }
@@ -53,5 +56,9 @@ namespace MessageService {
         IResponse ProcessRequest(IMessage message);
 
         void Init(MessageServiceClient messageServiceClient, Uri url, string serverId);
+
+        string Status();
+
+        bool QueueWhenFrozen();
     }
 }
